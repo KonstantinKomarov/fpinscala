@@ -47,46 +47,154 @@ object List: // `List` companion object. Contains functions for creating and wor
   def productViaFoldRight(ns: List[Double]): Double =
     foldRight(ns, 1.0, _ * _) // `_ * _` is more concise notation for `(x,y) => x * y`; see sidebar
 
-  def tail[A](l: List[A]): List[A] = ???
+  def tail[A](l: List[A]): List[A] = 
+    l match {
+      case Nil => sys.error("")
+      case Cons(_, t) => t
+    }
 
-  def setHead[A](l: List[A], h: A): List[A] = ???
+  def setHead[A](l: List[A], h: A): List[A] = 
+    l match {
+      case Nil => sys.error("")
+      case Cons(_, t) => Cons(h, t)
+    }
 
-  def drop[A](l: List[A], n: Int): List[A] = ???
+  @annotation.tailrec
+  def drop[A](l: List[A], n: Int): List[A] = 
+    if n <= 0 then l
+    else l match
+      case Nil => Nil
+      case Cons(_, t) => drop(t, n - 1)
+  
+  @annotation.tailrec
+  def dropWhile[A](l: List[A], f: A => Boolean): List[A] = 
+    l match {
+      case Cons(h, t) if f(h) => dropWhile(t, f)
+      case _ => l
+    }
 
-  def dropWhile[A](l: List[A], f: A => Boolean): List[A] = ???
+  def init[A](l: List[A]): List[A] = 
+    init2(l)
 
-  def init[A](l: List[A]): List[A] = ???
+  def init2[A](l: List[A]): List[A] = 
+    import collection.mutable.ListBuffer
+    val buf = new ListBuffer[A]
+    @annotation.tailrec
+    def build(cur: List[A]): List[A] = cur match
+      case Nil => sys.error("init2 by empty list")
+      case Cons(_, Nil) => List(buf.toList*)
+      case Cons(head, tail) => buf += head; build(tail)
+    build(l)
 
-  def length[A](l: List[A]): Int = ???
+  def init1[A](l: List[A]): List[A] = 
+    l match
+      case Nil => sys.error("init of emtpy list")
+      case Cons(_, Nil) => Nil
+      case Cons(head, tail) => Cons(head, init(tail))
+  
+  def length[A](l: List[A]): Int = 
+    foldRight(l, 0, (_, acc) => acc + 1)
 
-  def foldLeft[A,B](l: List[A], acc: B, f: (B, A) => B): B = ???
+  @annotation.tailrec
+  def foldLeft[A,B](l: List[A], acc: B, f: (B, A) => B): B = l match
+    case Nil => acc
+    case Cons(head, tail) => foldLeft(tail, f(acc, head), f)
 
-  def sumViaFoldLeft(ns: List[Int]): Int = ???
+  def sumViaFoldLeft(ns: List[Int]): Int = 
+    foldLeft(ns, 0, (acc, a) => acc + a)
 
-  def productViaFoldLeft(ns: List[Double]): Double = ???
+  def productViaFoldLeft(ns: List[Double]): Double = 
+    foldLeft(ns, 1.0, (acc, a) => acc * a)
 
-  def lengthViaFoldLeft[A](l: List[A]): Int = ???
+  def lengthViaFoldLeft[A](l: List[A]): Int = 
+    foldLeft(l, 0, (acc, _) => acc + 1)
 
-  def reverse[A](l: List[A]): List[A] = ???
+  def reverse[A](l: List[A]): List[A] = 
+    foldLeft(l, List[A](), (acc, a) => Cons(a, acc))
 
-  def appendViaFoldRight[A](l: List[A], r: List[A]): List[A] = ???
+  def foldLeftViaFoldRight[A, B](l: List[A], acc: B, f: (B, A) => B): B = 
+    foldRight(l, (b: B) => b, (i, g) => b => g(f(b, i)))(acc)
+  
+  def foldRightViaFoldLeft[A, B](l: List[A], acc: B, f: (A, B) => B): B =
+    foldLeft(l, (b: B) => b, (g, i) => b => g(f(i, b)))(acc)
 
-  def concat[A](l: List[List[A]]): List[A] = ???
+  def appendViaFoldRight[A](l: List[A], r: List[A]): List[A] = 
+    foldRight(l, r, Cons(_, _))
 
-  def incrementEach(l: List[Int]): List[Int] = ???
+  def appendViaFoldLeft[A](l: List[A], r: List[A]): List[A] = 
+    foldLeft(l, (lst: List[A]) => lst, (accF, a) => (tail: List[A]) => accF(Cons(a, tail)))(r)
 
-  def doubleToString(l: List[Double]): List[String] = ???
+  def concat[A](l: List[List[A]]): List[A] = 
+    foldRight(l, Nil: List[A], append)
 
-  def map[A,B](l: List[A], f: A => B): List[B] = ???
+  def concatViaFoldLeft[A](l: List[List[A]]): List[A] = 
+    foldLeft(l, (xs: List[A]) => xs, (accF, xs) => (tail: List[A]) => accF(append(xs, tail)))(Nil: List[A])
 
-  def filter[A](as: List[A], f: A => Boolean): List[A] = ???
+  def incrementEach(l: List[Int]): List[Int] = 
+    foldRight(l, Nil: List[Int], (i, acc) => Cons(i + 1, acc))
 
-  def flatMap[A,B](as: List[A], f: A => List[B]): List[B] = ???
+  def doubleToString(l: List[Double]): List[String] = 
+    foldLeft(l, (xs: List[String]) => xs, (accF, d) => (tail: List[String]) => accF(Cons(d.toString, tail)))(Nil)
 
-  def filterViaFlatMap[A](as: List[A], f: A => Boolean): List[A] = ???
+  def map[A,B](l: List[A], f: A => B): List[B] = 
+    foldRight(l, Nil: List[B], (i, acc) => Cons(f(i), acc))
+  
+  def mapViaFoldLeft[A,B](l: List[A], f: A => B): List[B] =  
+    foldLeft(l, (xs: List[B]) => xs, (accF, a) => (tail: List[B]) => accF(Cons(f(a), tail)))(Nil)
 
-  def addPairwise(a: List[Int], b: List[Int]): List[Int] = ???
+  def filter[A](as: List[A], f: A => Boolean): List[A] = 
+    foldRight(as, Nil: List[A], (i, acc) => if f(i) then Cons(i, acc) else acc)
+  
+  def filterViaFoldLeft[A](as: List[A], f: A => Boolean): List[A] = 
+    foldLeft(as, (xs: List[A]) => xs, (accF, a) =>
+      if f(a) then (tail: List[A]) => accF(Cons(a, tail))
+      else accF
+    )(Nil)
+
+  def flatMap[A,B](as: List[A], f: A => List[B]): List[B] = 
+    foldLeft(as, (xs: List[B]) => xs,
+      (accF, a) => (tail: List[B]) => accF(append(f(a), tail)) 
+    )(Nil)
+
+  def filterViaFlatMap[A](as: List[A], f: A => Boolean): List[A] = 
+    flatMap(as, a => if f(a) then List(a) else Nil)
+
+  def addPairwise(a: List[Int], b: List[Int]): List[Int] = 
+    foldLeft(
+      a,
+      ((xs: List[Int]) => xs, b),
+      {
+        case ((accF, restB), x) => 
+          restB match {
+            case Nil => (accF, Nil)
+            case Cons(y, ys) =>
+              ((tail: List[Int]) => accF(Cons(x + y, tail)), ys)
+        }
+      }
+    )._1(Nil)
 
   // def zipWith - TODO determine signature
+  def zipWith[A, B, C](a: List[A], b: List[B], f: (A, B) => C): List[C] = 
+    List.foldLeft(
+      a,
+      ((xs: List[C]) => xs, b),
+      {
+        case ((accF, restB), x) =>
+          restB match {
+            case Nil => (accF, Nil)
+            case Cons(y, ys) =>
+              ((tail: List[C]) => accF(Cons(f(x, y), tail)), ys)
+          }
+      }
+    )._1(Nil)
 
-  def hasSubsequence[A](sup: List[A], sub: List[A]): Boolean = ???
+  def hasSubsequence[A](sup: List[A], sub: List[A]): Boolean = 
+    @annotation.tailrec
+    def check(supRem: List[A], subRem: List[A]): Boolean = 
+      (supRem, subRem) match {
+        case (_, Nil) => true
+        case (Nil, _) => false
+        case (Cons(h1, t1), Cons(h2, t2)) if h1 == h2 => check(t1, t2)
+        case (Cons(h1, t1), _) => check(t1, subRem) 
+      }
+    check(sup, sub)
