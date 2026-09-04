@@ -92,3 +92,5 @@ class OptionSuite extends PropSuite:
       if list.contains("one") then None
       else Some(list.flatMap(_.toIntOption))
     assertEquals(Option.traverse(list)(strToOptInt), expected)
+    assertEquals(Option.traverse_1(list)(strToOptInt), expected)
+

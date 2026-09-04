@@ -75,6 +75,7 @@ class EitherSuite extends PropSuite:
         case _               => Right(Person(Name(name), Age(age)))
 
       assertEquals(Name.make(name).map2(Age.make(age))(Person(_, _)), expected)
+      assertEquals(Name.make(name).map2_2(Age.make(age))(Person(_, _)), expected)
 
   private val genAgesList: Gen[List[Int]] =
     Gen.union(
@@ -88,6 +89,7 @@ class EitherSuite extends PropSuite:
       else Right(ageList.map(Age(_)))
 
     assertEquals(Either.traverse(ageList)(Age.make), expected)
+    assertEquals(Either.traverse_1(ageList)(Age.make), expected)
 
   test("Either.sequence")(genAgesList): ageList =>
     val expected =
