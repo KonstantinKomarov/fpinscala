@@ -2,11 +2,14 @@ package fpinscala.exercises.laziness
 
 import fpinscala.answers.testing.exhaustive.*
 import fpinscala.answers.testing.exhaustive.Gen.`**`
+import fpinscala.answers.testing.exhaustive.Gen
 import fpinscala.answers.testing.exhaustive.Prop.*
 import fpinscala.exercises.common.Common.*
 import fpinscala.exercises.common.PropSuite
-import fpinscala.exercises.laziness.LazyList
-import fpinscala.exercises.laziness.LazyList.*
+// import fpinscala.exercises.laziness.LazyList
+// import fpinscala.exercises.laziness.LazyList.*
+import fpinscala.answers.laziness.LazyList
+import fpinscala.answers.laziness.LazyList.*
 
 import scala.util.{Random, Try}
 
@@ -49,12 +52,23 @@ class LazyListSuite extends PropSuite:
   test("LazyList.takeWhile")(genSmallInt ** genLazyList):
     case n ** lazyList =>
       assertEquals(lazyList.takeWhile(_ != n).toList, lazyList.toList.takeWhile(_ != n))
+      assertEquals(lazyList.takeWhile_1(_ != n).toList, lazyList.toList.takeWhile(_ != n))
 
   test("LazyList.forAll")(genSmallInt ** genLazyList):
     case n ** lazyList =>
       assertEquals(lazyList.forAll(_ != n), !lazyList.toList.contains(n))
 
-  /*
+  test("LazyList.headOption is lazy")(Gen.unit(())) { _ =>
+    var tailCalled = false
+    val stream = Cons(
+      () => 1,
+      () => { tailCalled = true; Empty }
+    )
+    val head = stream.headOption
+    assert(head == Some(1))
+    assert(!tailCalled, "tail should not be evaluated")
+  }
+
   test("LazyList.map")(genSmallInt ** genLazyList):
     case n ** lazyList =>
       assertEquals(lazyList.map(_ + n).toList, lazyList.toList.map(_ + n))
@@ -70,7 +84,6 @@ class LazyListSuite extends PropSuite:
   test("LazyList.flatMap")(genSmallInt ** genLazyList):
     case n ** lazyList =>
       assertEquals(lazyList.flatMap(a => LazyList(a + n)).toList, lazyList.toList.flatMap(a => List(a + n)))
-   */
 
   test("LazyList.ones")(genMidInt): n =>
     assertEquals(ones.take(n).toList, List.fill(n)(1))
@@ -105,7 +118,6 @@ class LazyListSuite extends PropSuite:
   test("LazyList.onesViaUnfold")(genMidInt): n =>
     assertEquals(onesViaUnfold.take(n).toList, List.fill(n)(1))
 
-  /*
   test("LazyList.mapViaUnfold")(genSmallInt ** genLazyList):
     case n ** lazyList =>
       assertEquals(lazyList.mapViaUnfold(_ + n).toList, lazyList.toList.map(_ + n))
@@ -125,7 +137,7 @@ class LazyListSuite extends PropSuite:
   test("LazyList.zipAll")(genLazyList ** genLazyList):
     case first ** second =>
       assertEquals(first.zipAll(second).toList, first.toList.map(Some(_)).zipAll(second.toList.map(Some(_)), None, None))
-   */
+      assertEquals(first.zipAllViaZipWithAll(second).toList, first.toList.map(Some(_)).zipAll(second.toList.map(Some(_)), None, None))
 
   test("LazyList.startsWith")(genLazyList ** genLazyList):
     case list1 ** list2 =>
@@ -133,7 +145,6 @@ class LazyListSuite extends PropSuite:
       assert(list1.startsWith(empty))
       assert(list1.startsWith(list1))
 
-/*
   test("LazyList.tails")(genLazyList): lazyList =>
     val list = lazyList.toList
     val expected = (0 to list.length).map(i => list.drop(i)).toList
@@ -152,4 +163,4 @@ class LazyListSuite extends PropSuite:
   test("LazyList.scanRight")(genLazyList): lazyList =>
     assertEquals(lazyList.scanRight(0)(_ + _).toList, lazyList.tails.map(_.toList.sum).toList)
     assertEquals(lazyList.scanRight(1)(_ * _).toList, lazyList.tails.map(_.toList.product).toList)
- */
+

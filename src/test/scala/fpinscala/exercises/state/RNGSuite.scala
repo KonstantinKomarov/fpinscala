@@ -71,22 +71,30 @@ class RNGSuite extends PropSuite:
     case rng ** counter =>
       assert(checkRND(rng, counter, map(int)(_.toString), _.toIntOption.isDefined))
 
-  /*
   test("RNG._double")(genRNG ** genCounter):
     case rng ** counter =>
       assert(checkRND(rng, counter, _double, isInInterval))
-   */
 
   test("RNG.map2")(genRNG ** genCounter):
     case rng ** counter =>
       val randC = map2(double, double)((d1, d2) => (d1, d2))
       assert(checkRND(rng, counter, randC, (d1, d2) => isInInterval(d1) && isInInterval(d2) && d1 != d2))
 
+  test("RNG.randViaBoth")(genRNG ** genCounter):
+    case rng ** counter =>
+      assert(checkRND(rng, counter, randIntDouble, (_, d) => isInInterval(d)))
+      assert(checkRND(rng, counter, randDoubleInt, (d, _) => isInInterval(d)))
+
   test("RNG.sequence")(genRNG ** genCounter ** genLengthOfList):
     case rng ** counter ** lengthOfList =>
       val ints: Rand[List[Int]] = sequence(List.fill(lengthOfList)(int))
       if lengthOfList <= 0 then assert(ints(rng)._1.isEmpty)
       else assert(checkRND(rng, counter, ints, list => list == list.distinct))
+
+  test("RNG._ints")(genRNG ** genCounter ** genLengthOfList):
+    case rng ** counter ** lengthOfList =>
+      if lengthOfList <= 0 then assert(ints(lengthOfList)(rng)._1.isEmpty)
+      else assert(checkRND(rng, counter, _ints(lengthOfList), list => list == list.distinct))
 
   test("RNG.flatMap")(genRNG ** genCounter ** genSmallPosNum):
     case rng ** counter ** limit =>
@@ -95,6 +103,11 @@ class RNGSuite extends PropSuite:
           val mod = i % n
           if (i + (n - 1) - mod >= 0) unit(mod) else nonNegativeLessThan(n)
       assert(checkRNGNonNegativeLessThan(rng, counter, nonNegativeLessThan(limit), limit))
+
+  test("RNG.nonNegativeLessThan")(genRNG ** genSmallPosNum):
+    case rng ** n =>
+      val (result, _) = nonNegativeLessThan(n)(rng)
+      assert(result >= 0 && result < n, s"$result not in [0, $n)")
 
   test("RNG.mapViaFlatMap")(genRNG ** genCounter):
     case rng ** counter =>
