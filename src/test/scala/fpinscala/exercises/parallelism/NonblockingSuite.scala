@@ -40,9 +40,25 @@ class NonblockingSuite extends PropSuite:
       val expected: String = ps(key).run(es)
       assertEquals(actual, expected)
 
+  test("Nonblocking.choiceMapViaFlatMap")(genParInt ** genMap):
+    case p ** ps =>
+      val pc = Par.choiceMapViaFlatMap[Int, String](p)(ps)
+      val actual: String = pc.run(es)
+      val key = p.run(es)
+      val expected: String = ps(key).run(es)
+      assertEquals(actual, expected)
+
   test("Nonblocking.chooser")(genParInt ** genMap):
     case p ** ps =>
       checkFlatMap(p, ps)(Par.chooser[Int, String](p)(ps))
+
+  test("Nonblocking.choiceViaChooser")(genParInt ** genParInt ** genParBoolean):
+    case t ** f ** p =>
+      checkChoice(t, f, p)(Par.choiceViaChooser[Int](p)(t, f))
+
+  test("Nonblocking.choiceNviaChooser")(genParInt ** genListOfParString):
+    case p ** ps =>
+      checkChoiceN(p, ps)(Par.choiceNviaChooser[String](p)(ps))
 
   test("Nonblocking.choiceViaFlatMap")(genParInt ** genParInt ** genParBoolean):
     case t ** f ** p =>
