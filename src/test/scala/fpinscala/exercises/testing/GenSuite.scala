@@ -26,13 +26,12 @@ object Gen:
 */
 
 // Gen tests:
-/*
   test("Exercise 8.4")(ExhGen.int ** ExhGen.int ** genRNG):
     case n ** m ** rng =>
       val (start, stopExclusive) = if n < m then (n, m) else (m, n)
       val (k, _) = Gen.choose(start, stopExclusive).next(rng)
       assert(start <= k && k <= stopExclusive)
-
+/*
   test("Exercise 8.5, unit")(ExhGen.int ** genRNG):
     case n ** rng0 =>
       val genUnit = Gen.unit(n)
