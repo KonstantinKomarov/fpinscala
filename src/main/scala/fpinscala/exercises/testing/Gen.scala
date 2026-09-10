@@ -36,7 +36,25 @@ object Gen:
     }
   }
 
-  def unit[A](a: => A): Gen[A] = ???
+  def unit[A](a: => A): Gen[A] = 
+    State { (rng: RNG) => (a, rng) }
+
+  def boolean: Gen[Boolean] =
+    State{ (rng: RNG) =>
+      val (n, rng2) = rng.nextInt
+      (n % 2 == 0, rng2)
+    }
+  
+  extension [A](self: Gen[A])
+    def listOfN(n: Int): Gen[List[A]] =
+      State { (rng: RNG) =>
+        val (list, rng2) = (0 until n).foldLeft((List.empty[A], rng)) {
+          case ((acc, r), _) =>
+            val (a, r2) = self.run(r)
+            (a :: acc, r2)
+        }
+        (list.reverse, rng2)
+      }
 
   extension [A](self: Gen[A])
     def flatMap[B](f: A => Gen[B]): Gen[B] = ???

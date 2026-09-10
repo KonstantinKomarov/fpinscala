@@ -31,7 +31,7 @@ object Gen:
       val (start, stopExclusive) = if n < m then (n, m) else (m, n)
       val (k, _) = Gen.choose(start, stopExclusive).next(rng)
       assert(start <= k && k <= stopExclusive)
-/*
+
   test("Exercise 8.5, unit")(ExhGen.int ** genRNG):
     case n ** rng0 =>
       val genUnit = Gen.unit(n)
@@ -48,7 +48,7 @@ object Gen:
 
       val (randomBooleanList1, _) = Gen.boolean.listOfN(n).next(rng1)
       assertEquals(randomBooleanList1.length, n)
-
+/*
   test("Exercise 8.6, flatMap")(ExhGen.int ** genRNG):
     case n ** rng =>
       val genA = Gen.unit(n)
