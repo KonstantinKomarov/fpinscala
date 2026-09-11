@@ -152,12 +152,12 @@ object SGen:
       def aToGenB(a: Int) = Gen.unit(aToB(a)).unsized
       val (isEven1, _) = sGenA.flatMap(aToGenB).apply(n).next(rng1)
       assertEquals(n % 2 == 0, isEven1)
-/*
+
   test("Exercise 8.12")(genShortNumber ** genRNG):
     case n ** rng =>
       val (randomBooleanList, _) = Gen.boolean.list(n).next(rng)
       assertEquals(randomBooleanList.length, n)
-
+/*
   test("Exercise 8.13")(genShortNumber ** genRNG):
     case n ** rng =>
       val (randomNonEmptyList, _) = Gen.boolean.nonEmptyList(n).next(rng)

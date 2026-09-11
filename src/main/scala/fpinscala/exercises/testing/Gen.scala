@@ -130,6 +130,8 @@ object Gen:
   extension [A](self: Gen[A])
     def unsized: SGen[A] = SGen(_ => self)
 
+    def list(n: Int): Gen[List[A]] = self.listOfN(n)
+
 opaque type SGen[+A] = Int => Gen[A]
 
 object SGen:
@@ -147,3 +149,6 @@ object SGen:
           f(a)(n)
         }
       }
+    
+    // def listOf(g: Gen[A]): SGen[List[A]] = 
+    //   SGen(n => g.listOfN(n))
