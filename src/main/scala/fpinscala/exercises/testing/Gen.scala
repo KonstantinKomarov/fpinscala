@@ -68,7 +68,20 @@ object Prop:
     ): Result =
       self(maxSize, testCases, rng)
 
-  def forAll[A](gen: Gen[A])(f: A => Boolean): Prop = ???
+  def forAll[A](gen: Gen[A])(f: A => Boolean): Prop = 
+    (max, n, rng) => {
+      @annotation.tailrec
+      def loop(i: Int, r: RNG, successes: SuccessCount): Result = 
+        if i >= n.toInt then Passed
+        else
+          val (a, r2) = gen.run(r)
+          if f(a) then loop(i + 1, r2, SuccessCount.fromInt(successes.toInt + 1))
+          else Falsified(
+            FailedCase.fromString(s"property failed for $a"),
+            successes
+          )
+      loop(0, rng, SuccessCount.fromInt(0))
+    }
 
 opaque type Gen[+A] = State[RNG, A]
 
@@ -137,6 +150,27 @@ object Gen:
 
   def listOf[A](g: Gen[A]): SGen[List[A]] = 
     SGen(n => g.listOfN(n))
+
+  def genIntList: Gen[List[Int]] = 
+    Gen.choose(1, 10).flatMap(n => Gen.choose(-1000, 1000).listOfN(n))
+
+  def lengthPreserved: Prop = 
+    Prop.forAll(genIntList)(list => list.sorted.length == list.length)
+  
+  def elementsPreserved: Prop = 
+    Prop.forAll(genIntList)(list => list.sorted.sorted == list.sorted)
+  
+  def isOrdered: Prop = 
+    Prop.forAll(genIntList) { list =>
+      list.sorted.sliding(2).forall {
+        case List(a, b) => a <= b
+        case _          => true
+      }
+    }
+  
+  def sortedProp: Prop = lengthPreserved && elementsPreserved && isOrdered
+
+end Gen
 
 opaque type SGen[+A] = Int => Gen[A]
 

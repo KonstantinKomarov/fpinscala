@@ -162,3 +162,7 @@ object SGen:
     case n ** rng =>
       val (randomNonEmptyList, _) = Gen.boolean.nonEmptyList(n).next(rng)
       assert(randomNonEmptyList.nonEmpty)
+
+  test("Exercise 8.14, List.sorted")(ExhGen.unit(())): _ =>
+    assertEquals(sortedProp.check(), Passed)
+
