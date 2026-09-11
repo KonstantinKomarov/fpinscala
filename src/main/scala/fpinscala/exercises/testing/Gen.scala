@@ -130,6 +130,20 @@ object Gen:
   extension [A](self: Gen[A])
     def unsized: SGen[A] = SGen(_ => self)
 
-// trait SGen[+A]
-case class SGen[+A](forSize: Int => Gen[A])
+opaque type SGen[+A] = Int => Gen[A]
+
+object SGen:
+  def apply[A](f: Int => Gen[A]): SGen[A] = f
+
+  extension [A](self: SGen[A])
+    def apply(n: Int): Gen[A] = self(n)
+
+    def map[B](f: A => B): SGen[B] =
+      SGen(n => self(n).map(f))
     
+    def flatMap[B](f: A => SGen[B]): SGen[B] =
+      SGen { n => 
+        self(n).flatMap { a =>
+          f(a)(n)
+        }
+      }
