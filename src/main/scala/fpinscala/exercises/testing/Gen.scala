@@ -132,6 +132,12 @@ object Gen:
 
     def list(n: Int): Gen[List[A]] = self.listOfN(n)
 
+    def nonEmptyList(n: Int): Gen[List[A]] = 
+      self.listOfN(n max 1)
+
+  def listOf[A](g: Gen[A]): SGen[List[A]] = 
+    SGen(n => g.listOfN(n))
+
 opaque type SGen[+A] = Int => Gen[A]
 
 object SGen:

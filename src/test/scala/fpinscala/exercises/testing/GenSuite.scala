@@ -157,9 +157,8 @@ object SGen:
     case n ** rng =>
       val (randomBooleanList, _) = Gen.boolean.list(n).next(rng)
       assertEquals(randomBooleanList.length, n)
-/*
+
   test("Exercise 8.13")(genShortNumber ** genRNG):
     case n ** rng =>
       val (randomNonEmptyList, _) = Gen.boolean.nonEmptyList(n).next(rng)
       assert(randomNonEmptyList.nonEmpty)
-*/
