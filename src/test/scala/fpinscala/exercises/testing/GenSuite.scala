@@ -48,13 +48,17 @@ object Gen:
 
       val (randomBooleanList1, _) = Gen.boolean.listOfN(n).next(rng1)
       assertEquals(randomBooleanList1.length, n)
-/*
+
   test("Exercise 8.6, flatMap")(ExhGen.int ** genRNG):
     case n ** rng =>
       val genA = Gen.unit(n)
       def aToGenB(a: Int) = Gen.unit(a % 2 == 0)
       val (isEven, _) = genA.flatMap(aToGenB).next(rng)
       assertEquals(n % 2 == 0, isEven)
+      
+      val (isEven2, _) = genA.flatMapViaStateFlatMap(aToGenB).next(rng)
+      assertEquals(n % 2 == 0, isEven)
+
 
   test("Exercise 8.6, listOfN")(genShortNumber ** genRNG):
     case n ** rng =>
@@ -90,7 +94,6 @@ object Gen:
       val (unionList3, _) = genUnion3.listOfN(shortSample).next(rng)
       assert(unionList3.count(_ == n) >= shortSample / 5, "g2 is twice as common as g1")
       assert(unionList3.count(_ == m) >= shortSample / 2, "g2 is twice as common as g1")
-*/
 
 
 // Prop tests: Before using these tests (starting from Exercise 8.9),

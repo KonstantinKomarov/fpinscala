@@ -7,15 +7,48 @@ import Gen.*
 import Prop.*
 import java.util.concurrent.{Executors,ExecutorService}
 
-trait Prop { self =>
-  def check: Boolean
+import Prop.Result.{Passed, Falsified, Proved}
 
-  def &&(p: Prop): Prop = new Prop {
-    def check: Boolean = self.check && p.check
-  }
-}
+opaque type Prop = (MaxSize, TestCases, RNG) => Result
 
 object Prop:
+  opaque type SuccessCount = Int
+  object SuccessCount:
+    extension(x: SuccessCount) def toInt: Int = x
+    def fromInt(x: Int): SuccessCount = x
+
+  opaque type TestCases = Int
+  object TestCases:
+    extension(x: TestCases) def toInt: Int = x
+    def fromInt(x: Int): TestCases = x
+
+  opaque type MaxSize = Int
+  object MaxSize:
+    extension(x: MaxSize) def toInt: Int = x
+    def fromInt(x: Int): MaxSize = x
+  
+  opaque type FailedCase = String
+  object FailedCase:
+    extension(f: FailedCase) def toString: String = f
+    def fromString(f: String): FailedCase = f
+  
+  enum Result:
+    case Passed
+    case Falsified(failure: FailedCase, successes: SuccessCount)
+    case Proved
+
+
+  extension [A](self: Prop)
+    def &&(that: Prop): Prop = 
+      (max, n, rng) => self.tag("and-left")(max, n, rng) match
+        case Passed | Proved => that.tag("and-right")(max, n, rng)
+        case x => x
+
+    def tag(msg: String): Prop = 
+      (max, n, rng) => self(max, n, rng) match
+        case Falsified(e, c) => Falsified(FailedCase.fromString(s"$msg($e)"), c)
+        case x => x
+
   def forAll[A](gen: Gen[A])(f: A => Boolean): Prop = ???
 
 opaque type Gen[+A] = State[RNG, A]
@@ -56,7 +89,23 @@ object Gen:
         (list.reverse, rng2)
       }
 
-  extension [A](self: Gen[A])
-    def flatMap[B](f: A => Gen[B]): Gen[B] = ???
+    def flatMap[B](f: A => Gen[B]): Gen[B] = 
+      State { (rng: RNG) => 
+        val (a, rng2) = self.run(rng)
+        f(a).run(rng2)
+      }
+
+    def flatMapViaStateFlatMap[B](f: A => Gen[B]): Gen[B] =
+      State.flatMap(self)(f)
+
+    def listOfN(size: Gen[Int]): Gen[List[A]] = 
+      size.flatMap(n => self.listOfN(n))
+
+  def union[A](g1: Gen[A], g2: Gen[A]): Gen[A] = 
+      boolean.flatMap(b => if b then g1 else g2)
+  
+  def weighted[A](g1: (Gen[A], Double), g2: (Gen[A], Double)): Gen[A] = 
+    val g1Grade = g1._2.abs / (g1._2.abs + g2._2.abs)
+    State(RNG.double).flatMap(d => if d < g1Grade then g1._1 else g2._1)
 
 trait SGen[+A]
