@@ -166,3 +166,28 @@ object SGen:
   test("Exercise 8.14, List.sorted")(ExhGen.unit(())): _ =>
     assertEquals(sortedProp.check(), Passed)
 
+  test("Exercise 8.15, exhaustive Boolean")(
+    ExhGen.unit(())
+  ): _ =>
+    val p = Prop.forAll(Gen.booleanExhaustive)(b => b == b)
+    assertEquals(p.check(), Proved)
+
+  test("Exercise 8.15, exhaustive small Int range")(
+    ExhGen.unit(())
+  ): _ =>
+    val p = Prop.forAll(Gen.chooseExhaustive(0, 10))(_ >= 0)
+    assertEquals(p.check(), Proved)
+
+  test("Exercise 8.15, non-exhaustive fails as Falsified")(
+    ExhGen.unit(())
+  ): _ =>
+    val p = Prop.forAll(Gen.chooseExhaustive(0, 10))(_ < 5)
+    assert(p.check().isFalsified)
+
+  test("Exercise 8.15, sized generator proved up to maxSize")(
+    ExhGen.unit(())
+  ): _ =>
+    // listOf(boolean) — размер от 0 до maxSize, все проходят
+    val g: SGen[List[Boolean]] = Gen.listOf(Gen.boolean)
+    val p = Prop.forAllSized(g)(list => list.length >= 0)
+    assertEquals(p.check(maxSize = MaxSize.fromInt(20)), Proved)

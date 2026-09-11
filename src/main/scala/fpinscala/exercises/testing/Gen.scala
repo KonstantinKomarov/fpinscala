@@ -83,6 +83,45 @@ object Prop:
       loop(0, rng, SuccessCount.fromInt(0))
     }
 
+  def forAll[A](eg: ExhaustiveGen[A])(f: A => Boolean): Prop = 
+    (max, n, rng) =>
+      eg.domain match
+        case Some(list) =>
+          @annotation.tailrec
+          def loop(xs: LazyList[A], successes: SuccessCount): Result = 
+            if xs.isEmpty then Proved
+            else
+              val x = xs.head
+              val rest = xs.tail
+                if f(x) then loop(rest, SuccessCount.fromInt(successes.toInt - 1))
+                else Falsified(FailedCase.fromString(s"property failed for $x"), successes)
+          loop(list, SuccessCount.fromInt(0))
+        
+        case None =>
+          @annotation.tailrec
+          def loop(i: Int, r: RNG, successes: SuccessCount): Result =
+            if i >= n.toInt then Passed
+            else
+              val (a, r2) = eg.gen.next(r)
+              if f(a) then loop(i + 1, r2, SuccessCount.fromInt(successes.toInt + 1))
+              else Falsified(FailedCase.fromString(s"property failed for $a"), successes)
+          loop(0, rng, SuccessCount.fromInt(0))
+  def forAllSized[A](g: SGen[A])(f: A => Boolean): Prop = 
+    (max, _, rng) => 
+      @annotation.tailrec
+      def loop(size: Int, r: RNG, successes: SuccessCount): Result = 
+        if size > max.toInt then Proved
+        else
+          val (a, r2) = g(size).next(r)
+          if f(a) then loop(size + 1, r2, SuccessCount.fromInt(successes.toInt + 1))
+          else Falsified(
+            FailedCase.fromString(s"property failed for size=$size, value=$a"),
+            successes
+          )
+      loop(0, rng, SuccessCount.fromInt(0))
+
+end Prop
+
 opaque type Gen[+A] = State[RNG, A]
 
 object Gen:
@@ -170,6 +209,21 @@ object Gen:
   
   def sortedProp: Prop = lengthPreserved && elementsPreserved && isOrdered
 
+  def booleanExhaustive: ExhaustiveGen[Boolean] = 
+    ExhaustiveGen(boolean,Some(LazyList(true, false)))
+  
+  def chooseExhaustive(start: Int, stopExclusive: Int): ExhaustiveGen[Int] = {
+    require(start < stopExclusive)
+    val domain =
+      if stopExclusive - start <= 256 then
+        Some(LazyList.range(start, stopExclusive))
+      else None
+    ExhaustiveGen(choose(start, stopExclusive), domain)
+  }
+
+  extension [A](self: Gen[A])
+    def toExhaustive: ExhaustiveGen[A] = ExhaustiveGen(self, None)
+
 end Gen
 
 opaque type SGen[+A] = Int => Gen[A]
@@ -192,3 +246,6 @@ object SGen:
     
     // def listOf(g: Gen[A]): SGen[List[A]] = 
     //   SGen(n => g.listOfN(n))
+
+
+case class ExhaustiveGen[+A](gen: Gen[A], domain: Option[LazyList[A]])
