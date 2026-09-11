@@ -37,6 +37,12 @@ object Prop:
     case Falsified(failure: FailedCase, successes: SuccessCount)
     case Proved
 
+    def isFalsified: Boolean = this match
+      case Falsified(_, _) => true
+      case _1              => false 
+    
+  def apply(f: (TestCases, RNG) => Result): Prop = 
+    (_, n, rng) => f(n, rng)
 
   extension [A](self: Prop)
     def &&(that: Prop): Prop = 
@@ -44,10 +50,23 @@ object Prop:
         case Passed | Proved => that.tag("and-right")(max, n, rng)
         case x => x
 
+    def ||(that: Prop): Prop = 
+      (max, n, rng) => self.tag("or-left")(max, n, rng) match
+        case Falsified(msg, _) => 
+          that.tag("or-right").tag(msg.toString)(max, n, rng)
+        case x => x
+      
     def tag(msg: String): Prop = 
       (max, n, rng) => self(max, n, rng) match
         case Falsified(e, c) => Falsified(FailedCase.fromString(s"$msg($e)"), c)
         case x => x
+
+    def check(
+        maxSize: MaxSize = 100,
+        testCases: TestCases = 100,
+        rng: RNG = RNG.Simple(System.currentTimeMillis)
+    ): Result =
+      self(maxSize, testCases, rng)
 
   def forAll[A](gen: Gen[A])(f: A => Boolean): Prop = ???
 
@@ -107,5 +126,10 @@ object Gen:
   def weighted[A](g1: (Gen[A], Double), g2: (Gen[A], Double)): Gen[A] = 
     val g1Grade = g1._2.abs / (g1._2.abs + g2._2.abs)
     State(RNG.double).flatMap(d => if d < g1Grade then g1._1 else g2._1)
+  
+  extension [A](self: Gen[A])
+    def unsized: SGen[A] = SGen(_ => self)
 
-trait SGen[+A]
+// trait SGen[+A]
+case class SGen[+A](forSize: Int => Gen[A])
+    
