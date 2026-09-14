@@ -3,6 +3,7 @@ package fpinscala.exercises.testing
 import fpinscala.exercises.state.*
 import fpinscala.exercises.parallelism.*
 import fpinscala.exercises.parallelism.Par.Par
+
 import Gen.*
 import Prop.*
 import java.util.concurrent.{Executors,ExecutorService}
@@ -223,6 +224,23 @@ object Gen:
 
   extension [A](self: Gen[A])
     def toExhaustive: ExhaustiveGen[A] = ExhaustiveGen(self, None)
+
+    def map[B](f: A => B): Gen[B] = 
+      self.flatMap(a => Gen.unit(f(a)))
+
+  def parInt: SGen[Par[Int]] =
+    SGen { size => 
+      if size <= 0 then
+        Gen.choose(-100, 100).map(Par.unit)
+      else
+        val sub = parInt(size / 2)
+        Gen.choose(0, 3).flatMap {
+          case 0 => Gen.choose(-100, 100).map(Par.unit)
+          case 1 => sub.map(p => Par.map(p)(_ + 1))
+          case 2 => for { p1 <- sub; p2 <- sub } yield p1.map2(p2)( _ + _)
+          case 3 => sub.map(p => Par.fork(p))
+        }
+    }
 
 end Gen
 

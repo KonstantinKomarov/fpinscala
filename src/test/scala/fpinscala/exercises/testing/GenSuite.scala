@@ -9,6 +9,8 @@ import fpinscala.exercises.state.State.*
 import fpinscala.exercises.testing.Gen
 import fpinscala.exercises.testing.Gen.*
 import fpinscala.exercises.testing.Prop.*
+import fpinscala.exercises.parallelism.Par
+import fpinscala.exercises.parallelism.Par.*
 
 class GenSuite extends PropSuite:
   private val shortSample = 1000
@@ -191,3 +193,30 @@ object SGen:
     val g: SGen[List[Boolean]] = Gen.listOf(Gen.boolean)
     val p = Prop.forAllSized(g)(list => list.length >= 0)
     assertEquals(p.check(maxSize = MaxSize.fromInt(20)), Proved)
+
+  test("Exercise 8.16, rich Par[Int] generator")(
+    ExhGen.int ** genRNG
+  ): 
+    case size ** rng =>
+      val sgen = Gen.parInt
+      val (par, _) = sgen(size max 0).next(rng)
+
+      val es = java.util.concurrent.Executors.newCachedThreadPool()
+      try
+        val result = par.run(es).get()
+        assert(result.isInstanceOf[Int])
+      finally
+        es.shutdown()
+
+  test("Exercise 8.16, generator produces varied structures")(genRNG): rng0 =>
+    val sgen = Gen.parInt
+    val es = java.util.concurrent.Executors.newCachedThreadPool()
+    try
+      val (results, _) = (1 to 100).foldLeft((List.empty[Int], rng0)) {
+        case ((acc, r), _) =>
+          val (par, r2) = sgen(10).next(r)
+          (par.run(es).get() :: acc, r2)
+      }
+      assert(results.distinct.size > 1)
+    finally
+      es.shutdown()
