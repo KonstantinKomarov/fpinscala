@@ -317,3 +317,32 @@ object SGen:
     assertEquals(takeWhileConstFalse.check(), Passed)
     assertEquals(dropWhileConstTrue.check(), Passed)
     assertEquals(dropWhileConstFalse.check(), Passed)
+
+  test("Exercise 8.19, generated fuctions are deterministic")(ExhGen.int ** ExhGen.int ** genRNG):
+    case a1 ** a2 ** rng =>
+      val g: Gen[Int => Int] = Cogen.fn1[Int, Int](Gen.choose(-100, 100))
+      val (f, _) = g.next(rng)
+      assertEquals(f(a1), f(a1))
+      assert(f(a2) == f(a2))
+  
+  test("Exercise 8.19, generate functions use their argument")(genRNG): rng =>
+    val g:Gen[Int => Int] = Cogen.fn1(Gen.choose(0, 1000))
+    val (f, _) = g.next(rng)
+
+    val inps = (0 to 100).toList
+    val outs = inps.map(f)
+  
+    assert(outs.distinct.size > 1,
+      s"Function returned constan value: ${outs.head}")
+  
+  test("Exercise 8.19, fn1 respects map fusion")(genRNG): rng =>
+    val g: Gen[Int => Int] =Cogen.fn1(Gen.choose(-100, 100))
+
+    val (f1, _) = g.map(h => (x: Int) => h(x) + 1).next(rng)
+    val (f2, _) = g.next(rng)
+    val (f3, _) = g.next(rng)
+
+    assertEquals(f1(42), f2(42) + 1)
+    assertEquals(f3(42), f2(42))
+  
+  

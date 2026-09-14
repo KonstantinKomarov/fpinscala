@@ -278,3 +278,26 @@ object SGen:
 
 
 case class ExhaustiveGen[+A](gen: Gen[A], domain: Option[LazyList[A]])
+
+opaque type Cogen[-A] = (A, RNG) => RNG
+
+object Cogen:
+  def apply[A](f: (A, RNG) => RNG): Cogen[A] = f
+  extension [A](self: Cogen[A])
+    def perturb(a: A, rng: RNG): RNG = self(a, rng)
+  
+  def fn[B](g: Gen[B]): Gen[() => B] = 
+    g.map(b => () => b)
+  
+  def fn1[A, B](g: Gen[B])(using cogen: Cogen[A]): Gen[A => B] =
+    State { (rng: RNG) =>
+      val f: A => B = (a: A) =>
+        val perturbed = cogen.perturb(a, rng)
+        g.run(perturbed)._1
+      (f, rng)
+    }
+  
+  given Cogen[Int] = Cogen { (a, rng) =>
+    val mixed = rng.nextInt._1 ^ a.hashCode
+    RNG.Simple(mixed.toLong)
+  }
