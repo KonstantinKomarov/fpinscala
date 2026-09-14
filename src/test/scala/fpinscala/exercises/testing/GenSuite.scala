@@ -208,15 +208,12 @@ object SGen:
       finally
         es.shutdown()
 
-  test("Exercise 8.16, generator produces varied structures")(genRNG): rng0 =>
+  test("Exercise 8.16, generator produces varied structures")(genRNG): rng =>
     val sgen = Gen.parInt
     val es = java.util.concurrent.Executors.newCachedThreadPool()
     try
-      val (results, _) = (1 to 100).foldLeft((List.empty[Int], rng0)) {
-        case ((acc, r), _) =>
-          val (par, r2) = sgen(10).next(r)
-          (par.run(es).get() :: acc, r2)
-      }
+      val (pars, _) = sgen(10).listOfN(100).next(rng)
+      val results = pars.map(_.run(es).get())
       assert(results.distinct.size > 1)
     finally
       es.shutdown()
