@@ -223,3 +223,97 @@ object SGen:
       case Passed | Proved => ()
       case f: Falsified => fail(s"fork law falsified: ${f.failure}") 
     }
+  
+  // Exercise 8.18: property takeWhile / dropWile for LazyList
+
+  // Gen LazyList[Int] meaning size
+  private val genLazyList: Gen[LazyList[Int]] = 
+    Gen.choose(0, 20).flatMap { n => 
+      Gen.choose(-100, 100).listOfN(n).map(LazyList.from(_))
+    }
+  
+  // Predicate' set for checking
+  private val predicates: List[Int => Boolean] = List(
+    _ < 0,
+    _ >= 0,
+    _ % 2 == 0,
+    _ % 2 != 0,
+    _ => true,
+    _ => false
+  )
+
+  // Run prop for all predicates on one LazyList
+  private def forAllListAndPred(
+    f: (LazyList[Int], Int => Boolean) => Boolean
+  ): Prop = 
+    Prop.forAll(genLazyList) { list => 
+      predicates.forall(p => f(list, p))
+    }
+  
+  // Main Prop: takeWhile ++ dropWhile == original LazyList
+  private def takeDropComplement: Prop = 
+    forAllListAndPred { (list, p) =>
+      list.takeWhile(p) ++ list.dropWhile(p) == list  
+    }
+  
+  // takeWhile - every element satisfies the predicates
+  private def takeWhileAll: Prop =
+    forAllListAndPred { (list, p) =>
+      list.takeWhile(p).forall(p)
+    }
+  
+  // dropWhile - first remained does't satisfy predicate
+  private def dropWhileHead: Prop = 
+    forAllListAndPred { (list, p) =>
+      list.dropWhile(p).headOption.forall(x => !p(x))
+    }
+  
+  // Idempotence
+  private def takeWhileIdempotent: Prop =
+    forAllListAndPred { (list, p) =>
+      list.takeWhile(p).takeWhile(p) == list.takeWhile(p)
+    }
+  
+  private def dropWhileIdempotent: Prop = 
+    forAllListAndPred { (list, p) =>
+      list.dropWhile(p).dropWhile(p) == list.dropWhile(p)
+    }
+  
+  // Saving length
+  private def takeDropLength: Prop = 
+    forAllListAndPred { (list, p) =>
+      list.dropWhile(p).dropWhile(p) == list.dropWhile(p)
+    }
+  
+  // Combining Prop with labels
+  private def takeDropProp: Prop = 
+    takeDropComplement.tag("compliment")
+      .&&(takeWhileAll.tag("takeWhileAll"))
+      .&&(dropWhileHead.tag("dropWhileHead"))
+      .&&(takeWhileIdempotent.tag("takeWhileIdempotent"))
+      .&&(dropWhileIdempotent.tag("dropWhilwIdempotent"))
+      .&&(takeDropLength.tag("takeDropLength"))
+  
+  // Boundary predicates
+  private def takeWhileConstTrue: Prop = 
+    Prop.forAll(genLazyList)(list => list.takeWhile(_ => true) == list)
+
+  private def takeWhileConstFalse: Prop = 
+    Prop.forAll(genLazyList)(list => list.takeWhile(_ => false).isEmpty)
+  
+  private def dropWhileConstTrue: Prop = 
+    Prop.forAll(genLazyList)(list => list.dropWhile(_ => true).isEmpty)
+  
+  private def dropWhileConstFalse: Prop = 
+    Prop.forAll(genLazyList)(list => list.dropWhile(_ => false) == list)
+  
+  test("Exercise 8.18 takeWhile/dropWhile properties")(ExhGen.unit(())): _ =>
+    takeDropProp.check() match 
+      case Passed | Proved => ()
+      case f: Falsified    => fail(s"takeWhile/dropWhile falsified: ${f.failure}")
+     
+  test("Exercise 8.18, boundary predicates")(ExhGen.unit((()))): _ => 
+    assertEquals(takeWhileConstTrue.check(), Passed)
+    assertEquals(takeWhileConstFalse.check(), Passed)
+    assertEquals(dropWhileConstTrue.check(), Passed)
+    assertEquals(dropWhileConstFalse.check(), Passed)
