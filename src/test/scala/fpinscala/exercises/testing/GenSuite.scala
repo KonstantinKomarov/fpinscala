@@ -217,3 +217,9 @@ object SGen:
       assert(results.distinct.size > 1)
     finally
       es.shutdown()
+
+  test("Exercise 8.17, fork(x) == x")(ExhGen.unit(())): _ =>
+    forkProp.check() match {
+      case Passed | Proved => ()
+      case f: Falsified => fail(s"fork law falsified: ${f.failure}") 
+    }

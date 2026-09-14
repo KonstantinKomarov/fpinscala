@@ -244,6 +244,17 @@ object Gen:
 
 end Gen
 
+def forkProp: Prop = 
+  Prop.forAllSized(parInt) { p => 
+    val es = Executors.newCachedThreadPool()
+    try
+      val r1 = p.run(es).get()
+      val r2 = Par.fork(p).run(es).get()
+      r1 == r2
+    finally
+      es.shutdown()
+  }
+
 opaque type SGen[+A] = Int => Gen[A]
 
 object SGen:
