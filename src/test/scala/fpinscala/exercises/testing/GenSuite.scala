@@ -345,4 +345,25 @@ object SGen:
     assertEquals(f1(42), f2(42) + 1)
     assertEquals(f3(42), f2(42))
   
+  test("Exercise 8.19, generate funtion is deterministic")(genRNG): rng =>
+    val g: Gen[Int => Int] = Cogen.fn1[Int, Int](Gen.choose(-100, 100))
+    val (f, _) = g.next(rng)
+
+    (0 to 20).foreach(x => assertEquals(f(x), f(x)))
   
+  def functionDetermenismProp: Prop = 
+    Prop.forAll(Cogen.fn1[Int, Int](Gen.choose(0, 100))) { f =>
+      f(42) == f(42)
+    }
+
+  test("Exercise 8.19, all function-generation propertes")(ExhGen.unit(())): _ =>
+    val rests = List(
+      ("deterministm", functionDetermenismProp)
+    )
+    rests.foreach { case (name, p) =>
+      p.check() match {
+        case Passed | Proved => ()
+        case f: Falsified =>
+          fail(s"$name falsified: ${f.failure}") 
+      }
+    }
