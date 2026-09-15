@@ -64,7 +64,7 @@ object Monoid:
     as.foldLeft(m.empty)(m.combine)
 
   def foldMap[A, B](as: List[A], m: Monoid[B])(f: A => B): B =
-    ???
+    as.foldLeft(m.empty)((acc, a) => m.combine(acc, f(a)))
 
   def foldRight[A, B](as: List[A])(acc: B)(f: (A, B) => B): B =
     ???
