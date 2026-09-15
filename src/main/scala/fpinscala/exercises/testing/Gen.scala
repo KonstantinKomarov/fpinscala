@@ -241,6 +241,17 @@ object Gen:
           case 3 => sub.map(p => Par.fork(p))
         }
     }
+  
+  extension [A](self: Gen[A])
+    def map2[B, C](other: Gen[B])(f: (A, B) => C): Gen[C] = 
+      State.map2(self)(other)(f)
+
+    @annotation.targetName("product")
+    def **[B](gb: Gen[B]): Gen[(A, B)] = 
+      map2(gb)((_, _))
+
+  object `**`:
+    def unapply[A, B](p: (A, B)) = Some(p)
 
 end Gen
 
