@@ -89,8 +89,23 @@ object Monoid:
     Par.parMap(v)(f).flatMap: bs =>
       foldMapV(bs, par(m))(b => Par.lazyUnit(b))
 
+  case class Segment(isOrdered: Boolean, first: Int, last: Int)
+  val optSegmentMonoid: Monoid[Option[Segment]] = new Monoid[Option[Segment]]:
+    def combine(a: Option[Segment], b: Option[Segment]): Option[Segment] = 
+      (a, b) match
+        case (None, _) => a
+        case (_, None) => b
+        case (Some(a), Some(b)) =>
+          Some(Segment(
+            a.isOrdered && b.isOrdered && a.last <= b.first,
+            a.first,
+            b.last
+          ))
+    def empty: Option[Segment] = None
+
   def ordered(ints: IndexedSeq[Int]): Boolean =
-    ???
+    foldMapV(ints, optSegmentMonoid)(i => Some(Segment(true, i, i)))
+    .forall(_.isOrdered)
 
   enum WC:
     case Stub(chars: String)
