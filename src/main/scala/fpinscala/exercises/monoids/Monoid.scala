@@ -61,7 +61,7 @@ object Monoid:
     associative && identity
 
   def combineAll[A](as: List[A], m: Monoid[A]): A =
-    ???
+    as.foldLeft(m.empty)(m.combine)
 
   def foldMap[A, B](as: List[A], m: Monoid[B])(f: A => B): B =
     ???
