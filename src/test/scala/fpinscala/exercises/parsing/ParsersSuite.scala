@@ -83,7 +83,7 @@ class ParsersSuite extends PropSuite:
     assert(zeroOrMoreAFollowedByOneOrMoreB.run("aaa").isLeft)
     assertEquals(zeroOrMoreAFollowedByOneOrMoreB.run("aaabbbab"), Right((3, 3)))
     assert(zeroOrMoreAFollowedByOneOrMoreB.run("c").isLeft)
-/*
+
   private val lawsParser: Gen[(Parser[Char], Parser[Char], Parser[Char], String, String)] =
     for
       a <- genChar
@@ -136,4 +136,4 @@ class ParsersSuite extends PropSuite:
 
   private def unbiasL[A, B, C](p: ((A, B), C)): (A, B, C) = (p(0)(0), p(0)(1), p(1))
   private def unbiasR[A, B, C](p: (A, (B, C))): (A, B, C) = (p(0), p(1)(0), p(1)(1))
-  */
+ 

@@ -1,5 +1,8 @@
 package fpinscala.exercises.parsing
 
+import java.util.regex.*
+import scala.util.matching.Regex
+
 trait Parsers[Parser[+_]]:
   
   def string(s: String): Parser[String]
@@ -8,6 +11,10 @@ trait Parsers[Parser[+_]]:
     string(c.toString).map(_.charAt(0))
 
   def succeed[A](a: A): Parser[A]
+
+  def fail(msg: String): Parser[Nothing]
+  
+  def regex(r: Regex): Parser[String]
 
   extension [A](p: Parser[A])
     def map[B](f: A => B): Parser[B] =
@@ -52,7 +59,7 @@ case class Location(input: String, offset: Int = 0):
 
   def advanceBy(n: Int) = copy(offset = offset+n)
 
-  def remaining: String = ???
+  def remaining: String = input.substring(offset)
 
   def slice(n: Int) = input.substring(offset, offset + n)
 
@@ -70,6 +77,16 @@ case class ParseError(stack: List[(Location,String)] = List(),
 class Examples[Parser[+_]](P: Parsers[Parser]):
   import P.*
 
-  val nonNegativeInt: Parser[Int] = ???
+  val nonNegativeInt: Parser[Int] = 
+    for
+      nStr <- regex("[0-9]+".r)
+      nInt <- nStr.toIntOption match
+        case Some(n) => succeed(n)
+        case None => fail("int is expected")
+    yield nInt
 
-  val nConsecutiveAs: Parser[Int] = ???
+  val nConsecutiveAs: Parser[Int] = 
+    for 
+      n <- nonNegativeInt
+      _ <- char('a').listOfN(n)
+    yield n
