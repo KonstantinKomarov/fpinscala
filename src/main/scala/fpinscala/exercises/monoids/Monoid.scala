@@ -79,11 +79,15 @@ object Monoid:
       val (l, r) = as.splitAt(as.length / 2)
       m.combine(foldMapV(l, m)(f), foldMapV(r, m)(f))
 
-  def par[A](m: Monoid[A]): Monoid[Par[A]] = 
-    ???
+  import fpinscala.exercises.parallelism.Nonblocking.Par
+
+  def par[A](m: Monoid[A]): Monoid[Par[A]] = new Monoid[Par[A]]:
+    def combine(pa: Par[A], pb: Par[A]): Par[A] = pa.map2(pb)(m.combine)
+    def empty: Par[A] = Par.unit(m.empty)
 
   def parFoldMap[A,B](v: IndexedSeq[A], m: Monoid[B])(f: A => B): Par[B] = 
-    ???
+    Par.parMap(v)(f).flatMap: bs =>
+      foldMapV(bs, par(m))(b => Par.lazyUnit(b))
 
   def ordered(ints: IndexedSeq[Int]): Boolean =
     ???
