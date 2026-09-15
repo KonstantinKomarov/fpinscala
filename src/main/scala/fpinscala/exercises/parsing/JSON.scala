@@ -27,7 +27,9 @@ object JSON:
     def lit: Parser[JSON] = (
       token("null").as(JNull) | 
       double.map(JNumber(_)) |
-      escapedQuoted.map(JString(_))
+      escapedQuoted.map(JString(_)) |
+      token("true").as(JBool(true)) |
+      token("false").as(JBool(false))
     ).scope("literal")
 
     def value: Parser[JSON] = lit | obj | array
