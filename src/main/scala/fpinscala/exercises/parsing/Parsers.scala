@@ -16,6 +16,22 @@ trait Parsers[Parser[+_]]:
   
   def regex(r: Regex): Parser[String]
 
+  def ws: Parser[String] = regex("\\s*".r)
+
+  def eof: Parser[String] = 
+    regex("\\z".r).label("unexpected trailing character")
+
+  def double: Parser[Double] = 
+    regex("-?\\d+(\\.\\d+)?([eE][+-]?\\d+)?".r).token
+    .map(_.toDouble).label("double literal")
+
+  def thru(s: String): Parser[String] = regex((".*?" + Pattern.quote(s)).r)
+
+  def quoted: Parser[String] = string("\"") *> thru("\"").map(_.dropRight(1))
+
+  def escapedQuoted: Parser[String] = 
+    quoted.label("string literal").token
+
   extension [A](p: Parser[A])
     def map[B](f: A => B): Parser[B] =
       p.flatMap(f andThen succeed)
@@ -45,6 +61,17 @@ trait Parsers[Parser[+_]]:
     
     def **[B](p2: Parser[B]): Parser[(A, B)] = p.product(p2)
 
+    def token: Parser[A] = p.attempt <* ws
+    def <*(p2: => Parser[Any]) = p.map2(p2.slice)((a, b) => a)
+    def attempt: Parser[A]
+    def *>[B](p2: => Parser[B]) = p.slice.map2(p2)((_, b) => b)
+    def sep(separator: Parser[Any]): Parser[List[A]] = p.sep1(separator) | succeed(Nil)
+    def sep1(separator: Parser[Any]): Parser[List[A]] = p.map2((separator *> p).many)(_ :: _)
+    def scope(msg: String): Parser[A]
+    def root: Parser[A] = p <* eof
+    def label(msg: String): Parser[A]
+    def as[B](b: B): Parser[B] = p.slice.map(_ => b)
+
   case class ParserOps[A](p: Parser[A])
 
   object Laws
@@ -70,9 +97,12 @@ case class Location(input: String, offset: Int = 0):
 
 case class ParseError(stack: List[(Location,String)] = List(),
                       otherFailures: List[ParseError] = List()):
-  def push(loc: Location, msg: String): ParseError = ???
+  def push(loc: Location, msg: String): ParseError = 
+    copy(stack = (loc, msg) :: stack)
 
-  def label(s: String): ParseError = ???
+  def label(s: String): ParseError = ParseError(latestLoc.map((_, s)).toList)
+  def latest = stack.lastOption
+  def latestLoc = latest map (_._1)
 
 class Examples[Parser[+_]](P: Parsers[Parser]):
   import P.*
