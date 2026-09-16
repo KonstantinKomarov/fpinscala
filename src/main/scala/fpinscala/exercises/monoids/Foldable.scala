@@ -17,7 +17,8 @@ trait Foldable[F[_]]:
       as.foldMap(identity)
 
     def toList: List[A] =
-      ???
+      // as.foldRight(List.empty[A])(_ :: _)
+      as.foldLeft(List.empty[A])(_ :+ _)
 
 object Foldable:
 
@@ -32,11 +33,11 @@ object Foldable:
   given Foldable[IndexedSeq] with
     extension [A](as: IndexedSeq[A])
       override def foldRight[B](acc: B)(f: (A, B) => B) =
-        ???
+        as.foldRight(acc)(f)
       override def foldLeft[B](acc: B)(f: (B, A) => B) =
-        ???
+        as.foldLeft(acc)(f)
       override def foldMap[B](f: A => B)(using mb: Monoid[B]): B =
-        ???
+        Monoid.foldMapV(as, mb)(f)
 
   given Foldable[LazyList] with
     extension [A](as: LazyList[A])
