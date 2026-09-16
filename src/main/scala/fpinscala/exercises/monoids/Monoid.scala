@@ -148,10 +148,20 @@ object Monoid:
     val empty: A => B = a => mb.empty
 
   given mapMergeMonoid[K, V](using mv: Monoid[V]): Monoid[Map[K, V]] with
-    def combine(a: Map[K, V], b: Map[K, V]) = ???
-    val empty = ???
+    def combine(a: Map[K, V], b: Map[K, V]) = 
+      (a.keySet ++ b.keySet).foldLeft(Map.empty[K, V]) { (acc, k) => 
+        val v = (a.get(k), b.get(k)) match 
+          case (Some(x), Some(y)) => mv.combine(x, y)
+          case (Some(x), None) => x
+          case (None, Some(y)) => y
+          case _ => mv.empty
+        acc.updated(k, v)
+      }
+    val empty = Map.empty
 
   def bag[A](as: IndexedSeq[A]): Map[A, Int] =
-    ???
+    val m = mapMergeMonoid[A, Int](using Monoid.intAddition)
+    as.foldLeft(m.empty)((acc, a) => m.combine(acc, Map(a -> 1)))
+    // as.foldMap(a => Map(a -> 1))(using m)
 
 end Monoid

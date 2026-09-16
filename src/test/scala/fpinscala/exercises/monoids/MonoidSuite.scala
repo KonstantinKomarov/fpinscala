@@ -220,3 +220,21 @@ class MonoidSuite extends PropSuite:
         fail(s"functionMonoid laws: ${f.failure}")
       case _ => () 
     }
+  
+  private val genStringEx: testing.Gen[String] = 
+    testing.Gen.choose(0, 5).flatMap(n =>
+      testing.Gen.choose('a'.toInt, 'e'.toInt)
+      .listOfN(n)
+      .map(_.map(_.toChar).mkString)
+    )
+  private val genIndexedSeqString: testing.Gen[IndexedSeq[String]] = 
+    testing.Gen.choose(0, 20).flatMap(n => genStringEx.listOfN(n).map(_.toIndexedSeq))
+  
+  test("Monoid.bag matches groupBy")(Gen.unit(())): _ =>
+    testing.Prop.forAll(genIndexedSeqString) { v =>
+      bag(v) == v.groupBy(identity).view.mapValues(_.size).toMap
+    }.check() match {
+      case testing.Prop.Result.Passed => ()
+      case f: testing.Prop.Result.Falsified => fail(s"bag int falsified: ${f.failure}")
+      case _ => () 
+    }
