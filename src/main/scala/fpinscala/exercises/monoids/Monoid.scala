@@ -144,8 +144,8 @@ object Monoid:
     val empty = (ma.empty, mb.empty)
 
   given functionMonoid[A, B](using mb: Monoid[B]): Monoid[A => B] with
-    def combine(f: A => B, g: A => B) = ???
-    val empty: A => B = a => ???
+    def combine(f: A => B, g: A => B) = a => mb.combine(f(a), g(a))
+    val empty: A => B = a => mb.empty
 
   given mapMergeMonoid[K, V](using mv: Monoid[V]): Monoid[Map[K, V]] with
     def combine(a: Map[K, V], b: Map[K, V]) = ???

@@ -178,3 +178,40 @@ class MonoidSuite extends PropSuite:
     val genInt: testing.Gen[Int] = testing.Gen.choose(-100, 100)
     val m = productMonoid(using Monoid.intAddition, Monoid.intMultiplication)
     assertEquals(monoidLaws(m, genPair(genInt, genInt)).check(), testing.Prop.Result.Passed)
+  
+  private def pointWiseEQ[A, B](f: A => B, g: A=> B, inpts: List[A]): Boolean = 
+    inpts.forall(a => f(a) == g(a))
+
+  private def functionMonoidLaws[A, B](
+    m: Monoid[A => B],
+    genFun: testing.Gen[A => B],
+    inpts: List[A]
+  ): testing.Prop = 
+    val genTriple = genFun.flatMap(f =>
+      genFun.flatMap(g => 
+        genFun.map(h => (f, g, h))
+      )
+    )
+
+    val assoc = testing.Prop.forAll(genTriple) { case (f, g, h) =>
+      pointWiseEQ(
+        m.combine(m.combine(f, g), h), 
+        m.combine(f, m.combine(g, h)), 
+        inpts
+      )
+    }.tag("associativity")
+
+    assoc
+
+  test("Monoid.functionMonoid laws")(Gen.unit(())): _ =>
+    val m: Monoid[Int => Int] = functionMonoid(using Monoid.intAddition)
+    val genFun: testing.Gen[Int => Int] = 
+      testing.Cogen.fn1[Int, Int](testing.Gen.choose(-100, 100))
+    val inpts = List(-100, -1, 0, 1, 7, 42, 1000)
+    
+    functionMonoidLaws(m, genFun, inpts).check() match {
+      case testing.Prop.Result.Passed => ()
+      case f: testing.Prop.Result.Falsified =>
+        fail(s"functionMonoid laws: ${f.failure}")
+      case _ => () 
+    }
