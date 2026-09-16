@@ -43,9 +43,9 @@ object Foldable:
   given Foldable[LazyList] with
     extension [A](as: LazyList[A])
       override def foldRight[B](acc: B)(f: (A, B) => B) =
-        ???
+        as.foldRight(acc)(f)
       override def foldLeft[B](acc: B)(f: (B, A) => B) =
-        ???
+        as.foldLeft(acc)(f)
 
   import fpinscala.exercises.datastructures.Tree
 
