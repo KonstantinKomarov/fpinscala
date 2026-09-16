@@ -11,8 +11,8 @@ trait Foldable[F[_]]:
       as.foldMap(a => b => f(b, a))(using endoMonoid[B])(acc)
 
     def foldMap[B](f: A => B)(using mb: Monoid[B]): B =
-      // as.foldRight(mb.empty)((a, acc) => mb.combine(f(a), acc))
-      as.foldLeft(mb.empty)((acc, a) => mb.combine(acc, f(a)))
+      as.foldRight(mb.empty)((a, acc) => mb.combine(f(a), acc))
+      // as.foldLeft(mb.empty)((acc, a) => mb.combine(acc, f(a)))
 
     def combineAll(using ma: Monoid[A]): A =
       as.foldMap(identity)
@@ -52,12 +52,17 @@ object Foldable:
   given Foldable[Tree] with
     import Tree.{Leaf, Branch}
     extension [A](as: Tree[A])
-      override def foldRight[B](acc: B)(f: (A, B) => B) =
-        ???
-      override def foldLeft[B](acc: B)(f: (B, A) => B) =
-        ???
-      override def foldMap[B](f: A => B)(using mb: Monoid[B]): B =
-        ???
+      override def foldRight[B](acc: B)(f: (A, B) => B) = as match
+        case Leaf(a) => f(a, acc)
+        case Branch(l, r) => l.foldRight(r.foldRight(acc)(f))(f)
+        
+      override def foldLeft[B](acc: B)(f: (B, A) => B) = as match
+        case Leaf(a) => f(acc, a)
+        case Branch(l, r) => r.foldLeft(l.foldLeft(acc)(f))(f)
+      override def foldMap[B](f: A => B)(using mb: Monoid[B]): B = as match
+        case Leaf(a) => f(a)
+        case Branch(l, r) => mb.combine(l.foldMap(f), r.foldMap(f))      
+        
 
   given Foldable[Option] with
     extension [A](as: Option[A])
