@@ -111,7 +111,19 @@ object Monoid:
     case Stub(chars: String)
     case Part(lStub: String, words: Int, rStub: String)
 
-  lazy val wcMonoid: Monoid[WC] = ???
+  lazy val wcMonoid: Monoid[WC] = new:
+    import WC.*
+    def combine(a: WC, b: WC): WC = (a, b) match 
+      case (Stub(c1), Stub(c2)) =>
+        Stub(c1 + c2)
+      case (Stub(c), Part(l, w, r)) =>
+        Part(c + l, w, r)
+      case (Part(l, w, r), Stub(c)) =>
+        Part(l, w, r + c)
+      case (Part(l1, w1, r1), Part(l2, w2, r2)) =>
+        val commWords = if (r1 + l2).nonEmpty then 1 else 0
+        Part(l1, w1 + w2 + commWords, r2)
+    def empty: WC = Stub("")
 
   def count(s: String): Int = ???
 
