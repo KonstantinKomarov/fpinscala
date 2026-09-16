@@ -5,16 +5,16 @@ trait Foldable[F[_]]:
 
   extension [A](as: F[A])
     def foldRight[B](acc: B)(f: (A, B) => B): B =
-      ???
+      as.foldMap(a => b => f(a, b))(using endoMonoid[B])(acc)
 
     def foldLeft[B](acc: B)(f: (B, A) => B): B =
-      ???
+      as.foldMap(a => b => f(b, a))(using endoMonoid[B])(acc)
 
     def foldMap[B](f: A => B)(using mb: Monoid[B]): B =
-      ???
+      as.foldLeft(mb.empty)((acc, a) => mb.combine(acc, f(a)))
 
     def combineAll(using ma: Monoid[A]): A =
-      ???
+      as.foldMap(identity)
 
     def toList: List[A] =
       ???
@@ -24,11 +24,10 @@ object Foldable:
   given Foldable[List] with
     extension [A](as: List[A])
       override def foldRight[B](acc: B)(f: (A, B) => B) =
-        ???
+        as.foldRight(acc)(f)
       override def foldLeft[B](acc: B)(f: (B, A) => B) =
-        ???
-      override def toList: List[A] =
-        ???
+        as.foldLeft(acc)(f)
+      override def toList: List[A] = as
 
   given Foldable[IndexedSeq] with
     extension [A](as: IndexedSeq[A])
