@@ -125,7 +125,18 @@ object Monoid:
         Part(l1, w1 + w2 + commWords, r2)
     def empty: WC = Stub("")
 
-  def count(s: String): Int = ???
+  def count(s: String): Int = 
+    import WC.*
+
+    def wcFromCh(char: Char): WC = char match
+      case ch if ch.isWhitespace => Part("", 0, "")
+      case ch => Stub(ch.toString)
+    
+    def unstub(chars: String) = if chars.isEmpty then 0 else 1
+    foldMapV(s.toIndexedSeq, wcMonoid)(wcFromCh) match
+      case Stub(chars) => unstub(chars)
+      case Part(l, w, r) => unstub(l) + w + unstub(r)
+    
 
   given productMonoid[A, B](using ma: Monoid[A], mb: Monoid[B]): Monoid[(A, B)] with
     def combine(x: (A, B), y: (A, B)) = ???
