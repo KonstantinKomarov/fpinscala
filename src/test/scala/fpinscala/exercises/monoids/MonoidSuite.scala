@@ -201,7 +201,12 @@ class MonoidSuite extends PropSuite:
       )
     }.tag("associativity")
 
-    assoc
+    val leftRightId = testing.Prop.forAll(genFun) { f =>
+      pointWiseEQ(m.combine(m.empty, f), f, inpts) &&
+      pointWiseEQ(m.combine(f, m.empty), f, inpts)
+    }
+
+    assoc && leftRightId
 
   test("Monoid.functionMonoid laws")(Gen.unit(())): _ =>
     val m: Monoid[Int => Int] = functionMonoid(using Monoid.intAddition)
