@@ -238,3 +238,17 @@ class MonoidSuite extends PropSuite:
       case f: testing.Prop.Result.Falsified => fail(s"bag int falsified: ${f.failure}")
       case _ => () 
     }
+  
+  test("Monoid.bagManComp homomorphism")(Gen.unit(())): _ =>
+    val m = mapMergeMonoid[String, Int](using Monoid.intAddition)
+    testing.Prop.forAll(
+      genIndexedSeqString.flatMap(v1 =>
+        genIndexedSeqString.map(v2 => (v1, v2))
+      )
+    ) { case (v1, v2) =>
+      bagManComp(v1 ++ v2) == m.combine(bagManComp(v1), bagManComp(v2))
+    }.check() match {
+      case testing.Prop.Result.Passed => ()
+      case f: testing.Prop.Result.Falsified => fail(s"homomorphism falsified ${f.failure}")
+      case _ => () 
+    }
