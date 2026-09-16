@@ -169,3 +169,12 @@ class MonoidSuite extends PropSuite:
     assertEquals(m.combine(a, m.combine(b, c)), m.combine(m.combine(a, b), c), "associativity")
     assertEquals(m.combine(a, m.empty), a, "identity")
     assertEquals(m.combine(m.empty, a), a, "identity")
+
+  import fpinscala.exercises.*
+  private def genPair[A, B](ga: testing.Gen[A], gb: testing.Gen[B]) =
+    ga.flatMap(a => gb.map(b => (a, b)))
+
+  test("Monoid.product intAddition")(Gen.unit(())): _ =>
+    val genInt: testing.Gen[Int] = testing.Gen.choose(-100, 100)
+    val m = productMonoid(using Monoid.intAddition, Monoid.intMultiplication)
+    assertEquals(monoidLaws(m, genPair(genInt, genInt)).check(), testing.Prop.Result.Passed)
