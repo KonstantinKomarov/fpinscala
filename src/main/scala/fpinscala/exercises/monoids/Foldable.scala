@@ -4,8 +4,8 @@ trait Foldable[F[_]]:
   import Monoid.{endoMonoid, dual}
 
   extension [A](as: F[A])
-    def foldRight[B](acc: B)(f: (A, B) => B): B =
-      as.foldMap(a => b => f(a, b))(using endoMonoid[B])(acc)
+    def foldRight[B](acc: B)(f: (A, B) => B): B = ???
+      // as.foldMap(a => b => f(a, b))(using endoMonoid[B])(acc)
 
     def foldLeft[B](acc: B)(f: (B, A) => B): B =
       as.foldMap(a => b => f(b, a))(using endoMonoid[B])(acc)
