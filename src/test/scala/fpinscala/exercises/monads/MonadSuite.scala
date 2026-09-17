@@ -41,6 +41,40 @@ class MonadSuite extends PropSuite:
     case n ** s =>
       assertMonad[List[_]](listMonad, n, s)
 
+  import fpinscala.exercises.state.State
+  import fpinscala.exercises.state.RNG
+
+  private def assertStateMonad[S, A](
+    m: Monad[[X] =>> State[S, X]],
+    a: A,
+    initialState: S,
+    f: A => State[S, A],
+    g: A => State[S, A]
+  ): Unit = 
+    assertEquals(
+      m.unit(a).flatMap(f).run(initialState), 
+      f(a).run(initialState),
+      "left identity"
+    )
+    val fa = f(a)
+    assertEquals(
+      fa.flatMap(m.unit).run(initialState),
+      fa.run(initialState),
+      "right identity"
+    )
+    assertEquals(
+      fa.flatMap(f).flatMap(g).run(initialState),
+      fa.flatMap(x => f(x).flatMap(g)).run(initialState),
+      "associativity"
+    )
+
+  test("stateMonad")(genInt ** genInt ** genInt):
+    case a ** b ** c =>
+      val m = summon[Monad[[X] =>> State[Int, X]]]
+      val f: Int => State[Int, Int] = x => State(s => (x + s, s + 1))
+      val g: Int => State[Int, Int] = x => State(s => (x * 2, s * 2))
+      assertStateMonad(m, a, 0, f, g)
+
   test("Monad.sequence")(genIntList ** genRNG):
     case intList ** rng =>
       val tm = genMonad(rng)

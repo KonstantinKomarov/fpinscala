@@ -106,6 +106,16 @@ object Monad:
       override def flatMap[B](f: A => List[B]) =
         fa.flatMap(f)
 
+  given stateMonad[S]: Monad[[A] =>> State[S, A]] with
+    def unit[A](a: => A): State[S, A] =
+      State(s => (a, s))
+    extension [A](fa: State[S, A])
+      override def flatMap[B](f: A => State[S, B]): State[S, B] = 
+        State { s => 
+          val (a, s2) = fa.run(s)
+          f(a).run(s2)
+        }
+
 end Monad
 
 case class Id[+A](value: A):
