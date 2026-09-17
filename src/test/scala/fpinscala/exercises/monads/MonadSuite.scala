@@ -155,6 +155,58 @@ class MonadSuite extends PropSuite:
       assertIdentityLawForFlatMap[LazyList[_]](lazyListMonad, intList)
       assertIdentityLawForFlatMap[List[_]](listMonad, intList)
 
+  import fpinscala.exercises.*
+  private def assocciativeEquivProp[F[_], A, B, C, D](
+    M: Monad[F],
+    genX: testing.Gen[F[A]],
+    f: A => F[B],
+    g: B => F[C],
+    h: C => F[D],
+    eqF: (F[D], F[D]) => Boolean,
+    eqG: (F[C], F[C]) => Boolean
+  ): testing.Prop = 
+    import M.*
+    val flatMapAssoc = testing.Prop.forAll(genX) { x =>
+      val flatMapL = x.flatMap(f).flatMap(g).flatMap(h)
+      val flatMapR = x.flatMap(a => f(a).flatMap(b => g(b).flatMap(h)))
+      eqF(flatMapL, flatMapR)
+    }.tag("flatMap-assoc")
+
+    val composeAssoc = testing.Prop.forAll(genX) { x =>
+      val composeL = x.flatMap(compose(compose(f, g), h))
+      val composeR = x.flatMap(a => f(a).flatMap(b => g(b).flatMap(h)))
+      eqF(composeL, composeR)
+    }.tag("compose-assoc")
+
+    val flatMapVsCompose = testing.Prop.forAll(genX) { x =>
+      val viaFlatMap = x.flatMap(f).flatMap(g)
+      val viaCompose = x.flatMap(compose(f, g))
+      eqG(viaFlatMap, viaCompose)
+    }.tag("flatMap-vs-compose")
+
+    flatMapAssoc && composeAssoc && flatMapVsCompose
+
+  test("Monad.associative equiv: State")(fpinscala.answers.testing.exhaustive.Gen.unit(())): _ =>
+    type tstedState = State[Int, Int]
+    val M = summon[Monad[[X] =>> State[Int, X]]]
+    // val genX: testing.Gen[State[Int, Int]] =
+    val genX: testing.Gen[tstedState] = 
+      testing.Gen.choose(-100, 100).map(a => State(s => (a + s, s + 1)))
+
+    val f: Int => tstedState = n => State(s => (n + s, s + 2))
+    val g: Int => tstedState = n => State(s => (n * s, s + 3))
+    val h: Int => tstedState = n => State(s => (n - s, s + 4))
+
+    val initState = 0
+    val eqF: (State[Int, Int], State[Int, Int]) => Boolean =
+      (s1, s2) => s1.run(initState) == s2.run(initState)
+
+    assocciativeEquivProp(M, genX, f, g, h, eqF, eqF).check() match
+      case testing.Prop.Result.Passed => ()
+      case f: testing.Prop.Result.Falsified =>
+        fail(s"state associative equiv falsified: ${f.failure}")
+      case _ => ()
+
   test("Monad.join")(genInt ** genRNG):
     case n ** rng =>
       val tm = genMonad(rng)
