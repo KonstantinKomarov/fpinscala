@@ -90,7 +90,6 @@ class MonadSuite extends PropSuite:
       assertFs(listMonad, pure(intList))
 
   // ToDo: Uncomment after fpinscala.exercises.testing.GenSuite passing
-/*
   test("Monad.replicateM")(genShortNumber ** genString ** genRNG):
     case n ** s ** rng =>
       val tm = genMonad(rng)
@@ -100,7 +99,6 @@ class MonadSuite extends PropSuite:
       val intList: List[Int] = listMonad.next(rng)._1
       assertEquals(intList.length, n)
       assert(intList.forall(i => 0 <= i && i <= 1000))
-*/
 
   test("Monad.filterM")(genIntList ** genRNG):
     case intList ** rng =>
