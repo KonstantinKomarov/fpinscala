@@ -47,7 +47,7 @@ trait Monad[F[_]] extends Functor[F]:
     sequence(List.fill(n)(fa))
 
   def compose[A, B, C](f: A => F[B], g: B => F[C]): A => F[C] =
-    ???
+    a => f(a).flatMap(g)
 
   extension [A](fa: F[A])
     def flatMapViaCompose[B](f: A => F[B]): F[B] =
