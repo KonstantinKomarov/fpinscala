@@ -54,7 +54,9 @@ trait Monad[F[_]] extends Functor[F]:
       ???
 
   def filterM[A](as: List[A])(f: A => F[Boolean]): F[List[A]] =
-    ???
+    as.foldRight(unit(List[A]()))((a, acc) => 
+      f(a).flatMap(b => if b then unit(a).map2(acc)(_ :: _) else acc)  
+    )
 
   extension [A](ffa: F[F[A]]) def join: F[A] =
     ???
