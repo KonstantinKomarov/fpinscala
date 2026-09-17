@@ -207,6 +207,38 @@ class MonadSuite extends PropSuite:
         fail(s"state associative equiv falsified: ${f.failure}")
       case _ => ()
 
+  private def idEquivProp[F[_], A, B](
+    M: Monad[F],
+    genX: testing.Gen[F[A]],
+    genY: testing.Gen[A],
+    f: A => F[B],
+    eqF: (F[A], F[A]) => Boolean,
+    eqG: (F[B], F[B]) => Boolean
+  ): testing.Prop = 
+    import M.*
+
+    val flatMapIdR: testing.Prop = 
+      testing.Prop.forAll(genX) { x => 
+        eqF(x.flatMap(unit), x)
+      }.tag("flatMap-right-id")
+    
+    flatMapIdR
+  
+  test("Monad.identity equiv: State")(fpinscala.answers.testing.exhaustive.Gen.unit(())): _ =>
+    val M = summon[Monad[[X] =>> State[Int, X]]]
+    val genX: testing.Gen[State[Int, Int]] = 
+      testing.Gen.choose(-100, 100).map(a => State(s => (a + s, s + 1)))
+    val genY: testing.Gen[Int] = testing.Gen.choose(-100, 100)
+    val f: Int => State[Int, Int] = n => State(s => (n + s, s + 2))
+    val initState = 0
+    val eqF: (State[Int, Int], State[Int, Int]) => Boolean = 
+      (s1, s2) => s1.run(initState) == s2.run(initState)
+    idEquivProp(M, genX, genY, f, eqF, eqF).check() match {
+      case testing.Prop.Result.Passed => ()
+      case f: testing.Prop.Result.Falsified => fail(s"state identity equivalence: ${f.failure}")
+      case _ => () 
+    }
+
   test("Monad.join")(genInt ** genRNG):
     case n ** rng =>
       val tm = genMonad(rng)
