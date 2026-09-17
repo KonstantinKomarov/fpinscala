@@ -239,6 +239,29 @@ class MonadSuite extends PropSuite:
       case _ => () 
     }
 
+  test("Monad.identity laws: Option")(fpinscala.answers.testing.exhaustive.Gen.unit(())): _ => 
+    val M = summon[Monad[Option]]
+    import M.*
+
+    val genX: testing.Gen[Option[Int]] = 
+      testing.Gen.boolean.flatMap(b => 
+        if b then testing.Gen.unit(None)
+        else testing.Gen.choose(-100, 100).map(Some(_))
+      )
+    val genY: testing.Gen[Int] = testing.Gen.choose(-100, 100)
+    val f: Int => Option[Int] = n => if n > 0 then Some(n * 2) else None
+    
+    val rId: testing.Prop =
+      testing.Prop.forAll(genX) { x =>
+        x.flatMap(unit) == x
+      }.tag("right identity")
+    
+    (rId).check() match {
+      case testing.Prop.Result.Passed => ()
+      case f: testing.Prop.Result.Falsified => fail(s"option identity laws: ${f.failure}")
+      case _ => () 
+    }
+
   test("Monad.join")(genInt ** genRNG):
     case n ** rng =>
       val tm = genMonad(rng)
