@@ -38,10 +38,10 @@ trait Monad[F[_]] extends Functor[F]:
       fa.flatMap(a => fb.map(b => f(a, b)))
 
   def sequence[A](fas: List[F[A]]): F[List[A]] =
-    ???
+    fas.foldRight(unit(List.empty[A]))((fa, acc) => fa.map2(acc)(_ :: _))
 
   def traverse[A, B](as: List[A])(f: A => F[B]): F[List[B]] =
-    ???
+    as.foldRight(unit(List.empty[B]))((a, acc) => f(a).map2(acc)(_ :: _))
 
   def replicateM[A](n: Int, fa: F[A]): F[List[A]] =
     ???
