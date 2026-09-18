@@ -63,10 +63,10 @@ trait Monad[F[_]] extends Functor[F]:
 
   extension [A](fa: F[A])
     def flatMapViaJoinAndMap[B](f: A => F[B]): F[B] =
-      ???
+      join(fa.map(f))
 
   def composeViaJoinAndMap[A, B, C](f: A => F[B], g: B => F[C]): A => F[C] =
-    ???
+    a => join(f(a).map(g))
 
 end Monad      
 

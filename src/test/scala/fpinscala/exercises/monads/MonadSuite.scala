@@ -300,6 +300,49 @@ class MonadSuite extends PropSuite:
       val fThenG = monad.composeViaJoinAndMap(f, g)
       assertFs(fThenG(intList), pure(intList.sum.toString))
 
+  private def joinMonadLawsProp[F[_], A](
+    M: Monad[F],
+    genM: testing.Gen[F[A]],
+    genMMM: testing.Gen[F[F[F[A]]]],
+    eqF: (F[A], F[A]) => Boolean
+  ): testing.Prop = 
+    import M.* 
+
+    val lId: testing.Prop =
+      testing.Prop.forAll(genM) { m =>
+        eqF(join(m.map(unit)), m)
+      }.tag("map-unit-join right identity")
+    
+    val assoc: testing.Prop =
+      testing.Prop.forAll(genMMM) { mmm =>
+        eqF(join(join(mmm)), join(mmm.map(join)))
+      }.tag("join associativity")
+
+    lId && assoc
+
+  test("Monad.join laws: Option")(fpinscala.answers.testing.exhaustive.Gen.unit(())): _ =>
+    val M = summon[Monad[Option]]
+    import M.*
+
+    val genM: testing.Gen[Option[Int]] =
+      testing.Gen.boolean.flatMap( b =>
+        if b then testing.Gen.unit(None)
+        else testing.Gen.choose(-100, 100).map(Some(_))
+      )
+    
+    val genMMM: testing.Gen[Option[Option[Option[Int]]]] = 
+      testing.Gen.choose(0, 3).map {
+        case 0 => None
+        case 1 => Some(None)
+        case 2 => Some(Some(None))
+        case _ => Some(Some(Some(42)))
+      }
+    
+    joinMonadLawsProp(M, genM, genMMM, _ == _).check() match
+      case testing.Prop.Result.Passed => ()
+      case f: testing.Prop.Result.Falsified => fail(s"option join laws: ${f.failure}")
+      case _ => ()
+
   test("Id.map")(genIntList): intList =>
     assertEquals(Id(intList).map(_.sum), Id(intList.sum))
 
