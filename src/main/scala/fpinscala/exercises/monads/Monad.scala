@@ -59,7 +59,7 @@ trait Monad[F[_]] extends Functor[F]:
     )
 
   extension [A](ffa: F[F[A]]) def join: F[A] =
-    ???
+    ffa.flatMap(identity)
 
   extension [A](fa: F[A])
     def flatMapViaJoinAndMap[B](f: A => F[B]): F[B] =
