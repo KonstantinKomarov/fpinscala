@@ -256,7 +256,23 @@ class MonadSuite extends PropSuite:
         x.flatMap(unit) == x
       }.tag("right identity")
     
-    (rId).check() match {
+    val lId: testing.Prop = 
+      testing.Prop.forAll(genY) { y =>
+        unit(y).flatMap(f) == f(y)
+
+      }.tag("left identity")
+
+    val compR: testing.Prop = 
+      testing.Prop.forAll(genY) { y =>
+        compose(f, unit)(y) == f(y)
+      }.tag("compose right identity")
+
+    val compL: testing.Prop = 
+      testing.Prop.forAll(genY) { y => 
+        compose((x: Int) => unit(x), f)(y) == f(y)
+      }.tag("compose left identity")
+
+    (rId && lId && compR && compL).check() match {
       case testing.Prop.Result.Passed => ()
       case f: testing.Prop.Result.Falsified => fail(s"option identity laws: ${f.failure}")
       case _ => () 
