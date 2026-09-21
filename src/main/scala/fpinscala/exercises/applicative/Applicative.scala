@@ -10,19 +10,11 @@ trait Applicative[F[_]] extends Functor[F]:
   def unit[A](a: => A): F[A]
 
   def apply[A, B](fab: F[A => B])(fa: F[A]): F[B] =
-    ???
+    fab.map2(fa)(_(_))
 
   extension [A](fa: F[A])
     def map2[B,C](fb: F[B])(f: (A, B) => C): F[C] =
-      apply(
-        apply(
-          unit(
-            (a: A) => 
-              (b: B) => 
-                f(a, b)
-          )
-        )(fa)
-      )(fb)
+      apply(apply(unit(f.curried))(fa))(fb)
 
     def map[B](f: A => B): F[B] =
       apply(unit(f))(fa)
@@ -122,3 +114,9 @@ object Applicative:
     extension [A](st: State[S, A])
       override def flatMap[B](f: A => State[S, B]): State[S, B] =
         State.flatMap(st)(f)
+
+
+val lazyListApplicative: Applicative[LazyList] = new Applicative[LazyList]:
+  def unit[A](a: => A): LazyList[A] = LazyList.continually(a)
+  override def apply[A, B](fab: LazyList[A => B])(fa: LazyList[A]): LazyList[B] =
+    fab.zip(fa).map(_(_))

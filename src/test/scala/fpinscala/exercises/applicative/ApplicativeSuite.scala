@@ -105,3 +105,12 @@ class ApplicativeSuite extends FunSuite:
 			Some(1).map4(Some(2), Some(3), Some(4))(_ + _ + _ + _),
 			Some(10)
 		)			
+
+	test("sequence: infinit stream - infinit result"):
+		// import lazyListApplicative.*
+		val ones = LazyList.continually(1)
+		val nats = LazyList.from(1)
+		assertEquals(
+			lazyListApplicative.sequence(List(ones, nats)).take(4).toList,
+			List(List(1, 1), List(1, 2), List(1, 3), List(1, 4))
+		)
