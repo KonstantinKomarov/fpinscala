@@ -83,4 +83,25 @@ class ApplicativeSuite extends FunSuite:
 	test("B.applyViaMap2 == original apply"):
 		val B = summon[AppB[Option]]
 		def applyViaMap2[X, Y](fxy: Option[X => Y])(fx: Option[X]): Option[Y] =
-			B.map2(fxy, fx)((f, x) => f(x))			
+			B.map2(fxy, fx)((f, x) => f(x))
+
+	test("map3 with different types"):
+		def calc(t: Option[Boolean]): Option[String] = 
+			Some(2).map3(Some("abc"),	t)((n, s, b) =>
+					if b then s * n else "not"
+				)
+ 
+		var t: Option[Boolean] = Some(true)
+		assertEquals(calc(t), Some("abcabc"))
+
+		t = Some(false)
+		assertEquals(calc(t), Some("not"))
+
+		t = None
+		assertEquals(calc(t), None)
+
+	test("map4"):
+		assertEquals(
+			Some(1).map4(Some(2), Some(3), Some(4))(_ + _ + _ + _),
+			Some(10)
+		)			
