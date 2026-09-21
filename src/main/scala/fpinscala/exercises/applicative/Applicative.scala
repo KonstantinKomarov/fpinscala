@@ -14,23 +14,31 @@ trait Applicative[F[_]] extends Functor[F]:
 
   extension [A](fa: F[A])
     def map2[B,C](fb: F[B])(f: (A, B) => C): F[C] =
-      ???
+      apply(
+        apply(
+          unit(
+            (a: A) => 
+              (b: B) => 
+                f(a, b)
+          )
+        )(fa)
+      )(fb)
 
     def map[B](f: A => B): F[B] =
       apply(unit(f))(fa)
 
   def sequence[A](fas: List[F[A]]): F[List[A]] =
-    ???
+    fas.foldRight(unit(List.empty[A]))((fa, acc) => fa.map2(acc)(_ :: _))
 
   def traverse[A,B](as: List[A])(f: A => F[B]): F[List[B]] =
     ???
 
   def replicateM[A](n: Int, fa: F[A]): F[List[A]] =
-    ???
+    sequence(List.fill(n)(fa))
 
   extension [A](fa: F[A])
     def product[B](fb: F[B]): F[(A, B)] =
-      ???
+      fa.map2(fb)((_, _))
 
     def map3[B, C, D](
       fb: F[B],
