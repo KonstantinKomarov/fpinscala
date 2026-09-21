@@ -104,17 +104,11 @@ object Applicative:
     extension [A](oa: Option[A])
       override def flatMap[B](f: A => Option[B]) = oa.flatMap(f)
 
-  given eitherMonad[E]: Monad[Either[E, _]] with
-    def unit[A](a: => A): Either[E, A] = ???
-    extension [A](eea: Either[E, A])
-      override def flatMap[B](f: A => Either[E, B]) = ???
-
   given stateMonad[S]: Monad[State[S, _]] with
     def unit[A](a: => A): State[S, A] = State(s => (a, s))
     extension [A](st: State[S, A])
       override def flatMap[B](f: A => State[S, B]): State[S, B] =
-        State.flatMap(st)(f)
-
+        State.flatMap(st)(f)        
 
 val lazyListApplicative: Applicative[LazyList] = new Applicative[LazyList]:
   def unit[A](a: => A): LazyList[A] = LazyList.continually(a)

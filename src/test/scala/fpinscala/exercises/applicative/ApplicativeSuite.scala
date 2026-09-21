@@ -2,6 +2,14 @@ package fpinscala.exercises.applicative
 
 import munit.FunSuite
 
+type EitherString[X] = Either[String, X]
+val eitherMonadInstance: Monad[EitherString] = new Monad[EitherString]:
+	def unit[A](a: => A): EitherString[A] = Right(a)
+	extension [A](eea: EitherString[A])
+		override def flatMap[B](f: A => EitherString[B]): EitherString[B] = eea match
+			case Right(a) => f(a)
+			case Left(e) => Left(e) 
+
 class ApplicativeSuite extends FunSuite:
 	given optionApplicative: Applicative[Option] with
 		def unit[A](a: => A): Option[A] = Some(a)
@@ -114,3 +122,10 @@ class ApplicativeSuite extends FunSuite:
 			lazyListApplicative.sequence(List(ones, nats)).take(4).toList,
 			List(List(1, 1), List(1, 2), List(1, 3), List(1, 4))
 		)
+	
+	test("eitherMonad: laws"):
+		val M = eitherMonadInstance
+		val f: Int => EitherString[Int] = n =>
+			if n > 0 then Right(n * 2) else Left(s"negative: $n")
+		
+		assertEquals(M.unit(5).flatMap(f), f(5))
