@@ -139,3 +139,38 @@ class ApplicativeSuite extends FunSuite:
 		val v1: Validation[String, Int] = Success(1)
 
 		assertEquals(v1.map2(v_1)(_ + _), v0)
+
+def applicativeFromMonad[F[_]](M: Monad[F]): Applicative[F] = new Applicative[F]:
+	def unit[A](a: => A): F[A] = M.unit(a)
+	override def apply[A, B](fab: F[A => B])(fa: F[A]): F[B] = 
+		M.flatMap(fab)(f => M.map(fa)(a => f(a)))
+	extension [A](fa: F[A])
+		override def map2[B, C](fb: F[B])(f: (A, B) => C): F[C] =
+			M.flatMap(fa)(a => M.map(fb)(b => f(a, b)))
+
+import fpinscala.exercises.common.PropSuite
+import fpinscala.exercises.monads.Monad
+import fpinscala.answers.testing.exhaustive.Gen as tstGen
+import fpinscala.answers.testing.exhaustive.Gen.**
+
+class MonadIsApplicativeSuite extends PropSuite:
+	val A: Applicative[Option] = applicativeFromMonad(Monad.optionMonad)
+	import A.*
+
+	private val genOptionInt: tstGen[Option[Int]] = 
+		tstGen.boolean.flatMap(b =>
+			if b then tstGen.unit(None: Option[Int])
+			else tstGen.choose(-100, 100).map(Some(_))
+		)
+	
+	private val genOptionFn: tstGen[Option[Int => Int]] = 
+		tstGen.boolean.flatMap(b =>
+			if b then tstGen.unit(None: Option[Int => Int])
+			else tstGen.choose(0, 5).map { n =>
+				Some((x: Int) => x + n)
+			}
+		)
+	
+	test("ApplicativeFromMonad: identity")(genOptionInt): v => 
+		val id: Int => Int = identity
+		assertEquals(apply(unit(identity))(v), v, "identity")
