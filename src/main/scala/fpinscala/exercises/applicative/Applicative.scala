@@ -108,9 +108,23 @@ object Applicative:
     def unit[A](a: => A): State[S, A] = State(s => (a, s))
     extension [A](st: State[S, A])
       override def flatMap[B](f: A => State[S, B]): State[S, B] =
-        State.flatMap(st)(f)        
+        State.flatMap(st)(f)   
 
 val lazyListApplicative: Applicative[LazyList] = new Applicative[LazyList]:
   def unit[A](a: => A): LazyList[A] = LazyList.continually(a)
   override def apply[A, B](fab: LazyList[A => B])(fa: LazyList[A]): LazyList[B] =
     fab.zip(fa).map(_(_))
+
+enum Validation[+E, +A]:
+  case Failure(head: E, tail: Vector[E])
+  case Success(get: A)
+
+object Validation:
+  given validationApplicative[E]: Applicative[[X] =>> Validation[E, X]] with
+    def unit[A](a: => A): Validation[E, A] = Success(a)
+    extension [A](fa: Validation[E, A])
+      override def map2[B, C](fb: Validation[E, B])(f: (A, B) => C): Validation[E, C] = (fa, fb) match
+        case (Success(a), Success(b)) => Success(f(a, b))
+        case (Failure(h1, t1), Success(_)) => Failure(h1, t1)
+        case (Success(_), Failure(h2, t2)) => Failure(h2, t2)
+        case (Failure(h1, t1), Failure(h2, t2)) => Failure(h1, t1 ++ (h2 +: t2))

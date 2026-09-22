@@ -129,3 +129,13 @@ class ApplicativeSuite extends FunSuite:
 			if n > 0 then Right(n * 2) else Left(s"negative: $n")
 		
 		assertEquals(M.unit(5).flatMap(f), f(5))
+	
+	test("validationApplicative: collect errors"):
+		import Validation.* 
+		import Validation.given
+
+		val v_1: Validation[String, Int] = Success(-1)
+		val v0: Validation[String, Int] = Success(0)
+		val v1: Validation[String, Int] = Success(1)
+
+		assertEquals(v1.map2(v_1)(_ + _), v0)
