@@ -174,3 +174,22 @@ class MonadIsApplicativeSuite extends PropSuite:
 	test("ApplicativeFromMonad: identity")(genOptionInt): v => 
 		val id: Int => Int = identity
 		assertEquals(apply(unit(identity))(v), v, "identity")
+
+class ApplicativeProductSuite extends FunSuite:
+	private val optionApplicative: Applicative[Option] =
+		new Applicative[Option]:
+			def unit[A](a: => A): Option[A] = Some(a)
+			override def apply[A, B](fab: Option[A => B])(fa: Option[A]): Option[B] = 
+				fab.flatMap(f => fa.map(f))
+	
+	test("product: unit, apply, apply with None") {
+		val OA = optionApplicative.product(optionApplicative)
+		assertEquals(OA.unit(42), (Some(42), Some(42)))
+
+		val fab = (Some((n: Int) => n + 1), Some((n: Int) => n * 2))
+		val fa = (Some(2), Some(4))
+		assertEquals(OA.apply(fab)(fa), (Some(3), Some(8)))
+
+		val fabNone = (Some((n: Int) => n + 1), None)
+		assertEquals(OA.apply(fabNone)(fa), (Some(3), None))
+	}
