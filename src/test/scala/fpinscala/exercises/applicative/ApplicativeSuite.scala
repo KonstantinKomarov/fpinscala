@@ -207,3 +207,13 @@ class ApplicativeSuite2 extends FunSuite:
 		import compose.*
 		assertEquals(xs.map2(ys)(_ + _).toList, List(Some(11), Some(22), Some(33)))
 	}
+
+	test("compose: (Option * LazyList) * Option") {
+		val leftAssoc = optionApplicative.compose(lazyListApplicative).compose(optionApplicative)
+		val rightAssoc = optionApplicative.compose(lazyListApplicative.compose(optionApplicative))
+		
+		val fab: Option[LazyList[Option[Int => Int]]] = Some(LazyList(Some(_ + 1), Some(_ * 2)))
+		val fa: Option[LazyList[Option[Int]]]					= Some(LazyList(Some(10), Some(20)))
+
+		assertEquals(leftAssoc.apply(fab)(fa), rightAssoc.apply(fab)(fa))
+	}
