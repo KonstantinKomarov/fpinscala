@@ -175,7 +175,7 @@ class MonadIsApplicativeSuite extends PropSuite:
 		val id: Int => Int = identity
 		assertEquals(apply(unit(identity))(v), v, "identity")
 
-class ApplicativeProductSuite extends FunSuite:
+class ApplicativeSuite2 extends FunSuite:
 	private val optionApplicative: Applicative[Option] =
 		new Applicative[Option]:
 			def unit[A](a: => A): Option[A] = Some(a)
@@ -192,4 +192,18 @@ class ApplicativeProductSuite extends FunSuite:
 
 		val fabNone = (Some((n: Int) => n + 1), None)
 		assertEquals(OA.apply(fabNone)(fa), (Some(3), None))
+	}
+
+	test("compose: unit, associative for LazyList") {
+		val OA = optionApplicative.compose(optionApplicative)
+		assertEquals(OA.unit(42), Some(Some(42))) 
+	
+		import fpinscala.exercises.monads.Monad.lazyListMonad
+		val LL = lazyListApplicative
+		val compose = LL.compose(optionApplicative)
+		val xs: LazyList[Option[Int]] = LazyList(Some(1), Some(2), Some(3))
+		val ys: LazyList[Option[Int]] = LazyList(Some(10), Some(20), Some(30))
+
+		import compose.*
+		assertEquals(xs.map2(ys)(_ + _).toList, List(Some(11), Some(22), Some(33)))
 	}

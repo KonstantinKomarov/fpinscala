@@ -69,7 +69,12 @@ trait Applicative[F[_]] extends Functor[F]:
         (self.apply(ff)(fa1), G.apply(gf)(ga1))
 
   def compose[G[_]](G: Applicative[G]): Applicative[[x] =>> F[G[x]]] =
-    ???
+    new Applicative[[X] =>> F[G[X]]]:
+      def unit[A](a: => A): F[G[A]] = 
+        self.unit(G.unit(a))
+      extension [A](fga: F[G[A]])
+        override def map2[B, C](fgb: F[G[B]])(f: (A, B) => C): F[G[C]] = 
+          self.map2(fga)(fgb)(G.map2(_)(_)(f))
 
   def sequenceMap[K,V](ofa: Map[K, F[V]]): F[Map[K, V]] =
     ???
