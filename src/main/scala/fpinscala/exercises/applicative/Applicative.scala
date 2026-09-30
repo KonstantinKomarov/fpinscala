@@ -142,3 +142,21 @@ object Validation:
         case (Failure(h1, t1), Success(_)) => Failure(h1, t1)
         case (Success(_), Failure(h2, t2)) => Failure(h2, t2)
         case (Failure(h1, t1), Failure(h2, t2)) => Failure(h1, t1 ++ (h2 +: t2))
+
+
+trait Traverse2[F[_]] extends Functor[F]:
+  def traverse[G[_]: Applicative, A, B](fa: F[A])(f: A => G[B]): G[F[B]] =
+    sequence(map(fa)(f))
+
+  def sequence[G[_]: Applicative, A](fga: F[G[A]]): G[F[A]] =
+    traverse(fga)(ga => ga)
+
+given listTraverse: Traverse2[List] with
+  extension [A](fa: List[A])
+    override def map[B](f: A => B): List[B] =
+      fa.map(f)
+  override def traverse[G[_]: Applicative, A, B](fa: List[A])(f: A => G[B]): G[List[B]] =
+    val APP = summon[Applicative[G]]
+    fa.foldRight(APP.unit(List.empty[B])) {
+      (a, acc) => APP.map2(f(a))(acc)(_ :: _)
+  }

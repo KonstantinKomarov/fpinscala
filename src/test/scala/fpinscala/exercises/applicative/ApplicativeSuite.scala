@@ -225,3 +225,10 @@ class ApplicativeSuite2 extends FunSuite:
 			Some(Map("a" -> 1, "b" -> 2, "c" -> 3))
 		)
 	}
+
+	test("List.traverse - all Some") {
+		val xs = List(1, 2, 3)
+		val r = listTraverse.traverse(xs)(x => Some(x * 10))(using optionApplicative)
+		assertEquals(r, Some(List(10, 20, 30)))
+	}
+
