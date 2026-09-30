@@ -217,3 +217,11 @@ class ApplicativeSuite2 extends FunSuite:
 
 		assertEquals(leftAssoc.apply(fab)(fa), rightAssoc.apply(fab)(fa))
 	}
+
+	test("sequenceMap") {
+		val m = Map("a" -> Some(1), "b" -> Some(2), "c" -> Some(3))
+		assertEquals(
+			optionApplicative.sequenceMap(m),
+			Some(Map("a" -> 1, "b" -> 2, "c" -> 3))
+		)
+	}
