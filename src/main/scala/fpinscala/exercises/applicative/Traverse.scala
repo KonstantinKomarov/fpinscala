@@ -31,7 +31,7 @@ trait Traverse[F[_]] extends Functor[F], Foldable[F]:
       fa.traverse[Const[B, _], Nothing](f)
 
     override def foldLeft[B](acc: B)(f: (B, A) => B): B =
-      fa.mapAccum(acc)((a, s) => ((), f(s, a)))(1)
+      fa.mapAccum(acc)((a, s) => ((), f(s, a)))._2
 
     override def toList: List[A] =
       fa.mapAccum(List.empty[A])((a, s) => ((), a :: s))._2.reverse
@@ -65,19 +65,39 @@ object Traverse:
   given listTraverse: Traverse[List] with
     extension [A](as: List[A])
       override def traverse[G[_]: Applicative, B](f: A => G[B]): G[List[B]] =
-        ???
+        val g = summon[Applicative[G]]
+        as.foldRight(g.unit(List[B]()))((a, acc) => f(a).map2(acc)(_ :: _))
 
   given optionTraverse: Traverse[Option] with
     extension [A](oa: Option[A])
       override def traverse[G[_]: Applicative, B](f: A => G[B]): G[Option[B]] =
-        ???
+        oa match
+          case Some(a) => f(a).map(Some(_))
+          case None => 
+            val g = summon[Applicative[G]]
+            g.unit(None)
 
   given treeTraverse: Traverse[Tree] = new:
     extension [A](ta: Tree[A])
       override def traverse[G[_]: Applicative, B](f: A => G[B]): G[Tree[B]] =
-        ???
+        def go(t: Tree[A]): G[Tree[B]] =
+          val g = summon[Applicative[G]]
+          val ghead: G[B] = f(t.head)
+          ghead.map2(listTraverse.traverse(t.tail)(go))(Tree(_, _))
+        go(ta)
+
+      def traverse_2[G[_]: Applicative, B](f: A => G[B]): G[Tree[B]] = 
+        val g = summon[Applicative[G]]
+        val ghead: G[B] = f(ta.head)
+        val gtail: G[List[Tree[B]]] =
+          ta.tail.foldRight(g.unit(List.empty[Tree[B]])) { (subtree, acc) =>
+            g.map2(subtree.traverse(f))(acc)(_ :: _)
+          }
+        g.map2(ghead)(gtail)(Tree(_, _))
   
   given mapTraverse[K]: Traverse[Map[K, _]] with
     extension [A](m: Map[K, A])
       override def traverse[G[_]: Applicative, B](f: A => G[B]): G[Map[K, B]] =
-        ???
+        listTraverse.traverse(m.toList) { case (k, a) =>
+          f(a).map(b => (k, b))
+        }.map(_.toMap)
