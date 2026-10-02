@@ -17,7 +17,7 @@ case class FlatMap[A, B](sub: IO[A], k: A => IO[B]) extends IO[B]
 	case FlatMap(x, f) => x match {
 		case Return(a) => run(f(a))
 		case Suspend(r) => run(f(r()))
-		case FlatMap(y, g) => run(y flatMap (a => g(a) flatMap f))
+		case FlatMap(y, g) => run(y.flatMap(a => g(a).flatMap(f)))
 	}
 }
 
