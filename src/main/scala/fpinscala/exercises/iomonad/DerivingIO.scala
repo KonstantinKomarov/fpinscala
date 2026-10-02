@@ -420,7 +420,16 @@ object IO3:
 
     // Exercise 2: Implement runTrampoline
     extension [A](fa: Free[Function0, A])
-      def runTrampoline: A = ???
+      def runTrampoline: A = 
+        @annotation.tailrec
+        def go(cur: Free[Function0, A]): A = cur.step match
+          case Return(a)      => a
+          case Suspend(ta)    => ta()
+          case FlatMap(fx, f) => fx match
+            case Return(x) => go(f(x))
+            case Suspend(tx) => go(f(tx()))
+            case FlatMap(fy, g) => go(fy.flatMap(y => g(y).flatMap(f)))
+        go(fa)        
 
   /*
   The type constructor `F` lets us control the set of external requests our

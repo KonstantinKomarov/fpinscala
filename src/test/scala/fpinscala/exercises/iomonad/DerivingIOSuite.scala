@@ -32,3 +32,13 @@ class DerivingIOSuite extends FunSuite:
 			M.flatMap(m)(i => M.flatMap(f(i))(g)).runFree[Id](askToId)
 		assertEquals(lhs, rhs)			
 	}
+
+	test("runTrampline: exception") {
+		val log = scala.collection.mutable.ArrayBuffer.empty[String]
+		val io: Free[Function0, Int] = 
+			Suspend ( () => { log += "1"; 1 } )
+				.flatMap(_ => Suspend ( () => { log += "2"; throw new RuntimeException("fail") } ) )
+				.flatMap((x: Int) => Suspend ( () => { log += "3"; x } ) )
+		intercept[RuntimeException](io.runTrampoline)
+		assertEquals(log.toList, List("1", "2"))
+	}
