@@ -102,3 +102,45 @@ class DerivingIOSuite extends FunSuite:
 		finally 
 			System.setOut(origOut)
 	}
+
+	test("read: multiple composes througth flatMap") {
+		import java.nio.channels.{AsynchronousFileChannel, CompletionHandler}
+		import java.nio.file.{Files, StandardOpenOption}
+		import java.util.concurrent.Executors
+		import IO3.{Free, *}
+		import fpinscala.answers.parallelism.Nonblocking.*
+
+		given Monad[Par] with
+			def unit[A](a: => A): Par[A] = Par.unit(a)
+			extension [A](fa: Par[A])
+				override def flatMap[B](f: A => Par[B]): Par[B] = 
+					Par.flatMap(fa)(f)
+
+		def unsafeRunSync[A](io: Free[Par, A]): A =
+			val pool = Executors.newFixedThreadPool(2)
+			try
+				io.run.run(pool)
+			finally
+				pool.shutdown()
+
+		val path = Files.createTempFile("read-test", "*.txt")
+		try 
+			Files.write(path, "Hello, World".getBytes)
+			val channel = AsynchronousFileChannel.open(path, StandardOpenOption.READ)
+			try 
+				val prog: Free[Par, (Either[Throwable, Array[Byte]], Either[Throwable, Array[Byte]])] = 
+					for
+						first  <- read(channel, 0, 5)
+						second <- read(channel, 7, 5)
+					yield (first, second)
+
+				val (r1, r2) = unsafeRunSync(prog)
+				assert(r1.exists(_.sameElements("Hello".getBytes)),
+							 s"first: $r1"
+				)
+				assert(r2.exists(_.sameElements("World".getBytes)),
+							 s"second: $r2"
+				)
+			finally channel.close()
+		finally Files.delete(path)
+	}

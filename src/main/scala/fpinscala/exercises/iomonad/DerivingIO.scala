@@ -573,7 +573,25 @@ object IO3:
   def read(file: AsynchronousFileChannel,
            fromPosition: Long,
            numBytes: Int): Free[Par, Either[Throwable, Array[Byte]]] =
-    ???
+    Suspend(
+      Par.async: (cb: Either[Throwable, Array[Byte]] => Unit) => 
+        val buf = ByteBuffer.allocate(numBytes)
+        file.read(
+          buf,
+          fromPosition,
+          (),
+          new CompletionHandler[Integer, Unit]:
+            def completed(bytesRead: Integer, ignore: Unit) = 
+              if bytesRead == -1 then cb(Right(Array.emptyByteArray))
+              else
+                var arr = new Array[Byte](bytesRead)
+                buf.flip()
+                buf.get(arr, 0, bytesRead)
+                cb(Right(arr))
+            def failed(err: Throwable, ignore: Unit) = 
+              cb(Left(err))
+        )
+    )
 
 end IO3
 
