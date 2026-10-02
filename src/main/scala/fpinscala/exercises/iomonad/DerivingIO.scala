@@ -503,7 +503,7 @@ object IO3:
   // Exercise 4: Implement unsafeRunConsole
   extension [A](fa: Free[Console, A])
     def unsafeRunConsole: A =
-      ???
+      fa.translate[Function0]([X] => (c: Console[X]) => c.toThunk).runTrampoline
 
   /*
   There is nothing about `Free[Console, A]` that requires we interpret

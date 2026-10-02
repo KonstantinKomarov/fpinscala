@@ -69,13 +69,14 @@ class DerivingIOSuite extends FunSuite:
 		}
 	}
 
+	import IO3.{Console, Free}
+
 	test("translate: saves flatMap's structure") {
-		import IO3.{Console, Free}
 		given Monad[Option] with
 			def unit[A](a: => A): Option[A] = Some(a)
 			extension [A](fa: Option[A])
 				override def flatMap[B](f: A => Option[B]): Option[B] = fa.flatMap(f)
-				
+
 		val collected = scala.collection.mutable.ArrayBuffer.empty[String]
 		val recordNat: [X] => Console[X] => Option[X] = [X] => (c: Console[X]) => c match
 			case Console.ReadLine			=> Some(None)
@@ -86,4 +87,18 @@ class DerivingIOSuite extends FunSuite:
 				.flatMap(_ => Console.printLn("c"))
 		assertEquals(prog.translate[Option](recordNat).run, Some(()))
 		assertEquals(collected.toList, List("a", "b", "c"))
+	}
+
+	test("unsafeRunConsole") {
+		val origOut = System.out
+		val baos = new java.io.ByteArrayOutputStream()
+		System.setOut(new java.io.PrintStream(baos))
+		try
+			val prog: Free[Console, Unit] = 
+				Console.printLn("hello")
+					.flatMap(_ => Console.printLn("world"))
+			prog.unsafeRunConsole
+			assertEquals(baos.toString.trim, "hello\nworld")
+		finally 
+			System.setOut(origOut)
 	}
