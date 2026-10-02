@@ -388,8 +388,13 @@ object IO3:
       flatMap(a => Return(f(a)))
 
     // Exercise 3: Implement a `Free` interpreter which works for any `Monad`
-    def run(using F: Monad[F]): F[A] = ???
-
+    def run(using F: Monad[F]): F[A] = 
+      step match
+        case Return(a) => F.unit(a)
+        case Suspend(fa) => fa
+        case FlatMap(Suspend(fa), f) => fa.flatMap(a => f(a).run)
+        case FlatMap(_, _) => sys.error("Impossible, since `step` eliminates these cases")
+      
     // return either a `Suspend`, a `Return`, or a right-associated `FlatMap`
     @annotation.tailrec
     final def step: Free[F, A] = this match
@@ -406,7 +411,7 @@ object IO3:
 
     // Exercise 4: Implement translate using runFree
     def translate[G[_]](fToG: [x] => F[x] => G[x]): Free[G, A] =
-      ???
+      runFree[[X] =>> Free[G, X]]([X] => (fx: F[X]) => Suspend(fToG(fx)))
 
   import Free.{Return, Suspend, FlatMap}
 
