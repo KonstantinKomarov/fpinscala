@@ -107,11 +107,45 @@ object STArray:
 object Immutable:
   // Exercise 14.2
   def partition[S](a: STArray[S, Int], l: Int, r: Int, pivot: Int): ST[S, Int] =
-    ???
+    val findPivot: ST[S, Int] = 
+      (l to r).foldLeft(ST[S, Option[Int]](None)) {
+        case (acc, idx) =>
+          acc.flatMap {
+            case some @ Some(_) => ST(some)
+            case None           => 
+              a.read(idx).map(
+                x => if x == pivot then Some(idx) else None
+              )
+          }
+      }.map(_.getOrElse(l))
+    
+    val loop: ST[S, Int] = 
+      (l until r).foldLeft(ST[S, Int](l)) {
+        case (acc, j) =>
+          acc.flatMap { i =>
+            a.read(j).flatMap { x =>
+              if x < pivot then a.swap(i, j).map(_ => i + 1)
+              else ST(i)
+            }
+          }
+      }
+
+    for 
+      pIdx <- findPivot
+      _    <- if pIdx != r then a.swap(pIdx, r) else ST[S, Unit](())
+      p    <- loop
+      _    <- a.swap(p, r)
+    yield p
 
   // Exercise 14.2
   def qs[S](a: STArray[S,Int], l: Int, r: Int): ST[S, Unit] =
-    ???
+    if l >= r then ST[S, Unit](())
+    else for
+      pivot <- a.read(l)
+      p     <- partition(a, l, r, pivot)
+      _     <- qs(a, l, p - 1)
+      _     <- qs(a, p + 1, r)
+    yield ()
 
   def quicksort(xs: List[Int]): List[Int] =
     if xs.isEmpty then xs else ST.run([s] => () =>

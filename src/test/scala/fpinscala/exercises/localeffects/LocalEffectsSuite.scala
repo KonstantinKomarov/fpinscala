@@ -21,6 +21,21 @@ class STArraySuite extends FunSuite:
     assertEquals(run(prog), List(1, 0, 3, 0, 0))
   }
 
+  test("qs"){
+    val prog: RunnableST[(Int, List[Int])] = new RunnableST[(Int, List[Int])]:
+      def apply[S] = for 
+        arr <- STArray.fromList[S, Int](List(3, 1, 4, 1, 5, 9, 2, 6))
+        sz  <- arr.size
+        p   <- Immutable.partition(arr, 0, sz - 1, sz / 2 )
+        xs  <- arr.freeze
+      yield (p, xs)
+    
+    val (p, xs) = ST.run[(Int, List[Int])]([s] => () => prog.apply[s])
+    assertEquals(xs(p), 4)
+    assert(xs.take(p).forall(_ < 4), s"left side: ${xs.take(p)}")
+    assert(xs.drop(p + 1).forall(_ >= 4), s"right side: ${xs.drop(p + 1)}")
+  }
+
 class LocalEffectsSuite extends FunSuite:
   test("1") {
     assertEquals(1, 2)
