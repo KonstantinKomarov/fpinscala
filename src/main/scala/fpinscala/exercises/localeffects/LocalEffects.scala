@@ -156,3 +156,26 @@ object Immutable:
         sorted <- arr.freeze
       yield sorted
    )
+
+import scala.collection.mutable
+
+final class STMap[S, K, V] private (private val value: mutable.HashMap[K, V]):
+  def size: ST[S, Int] = ST(value.size)
+
+  def read(k: K): ST[S, Option[V]] = ST(value.get(k))
+
+  def write(k: K, v: V): ST[S, Unit] = ST.lift[S, Unit]: s =>
+    value(k) = v
+    ((), s)
+  
+  def delete(k: K): ST[S, Option[V]] = ST.lift[S, Option[V]]: s =>
+    (value.remove(k), s)
+
+  def freeze: ST[S, Map[K, V]] = ST(value.toMap)
+
+object STMap:
+  def empty[S, K, V]: ST[S, STMap[S, K, V]] = 
+    ST(new STMap[S, K, V](mutable.HashMap.empty[K, V]))
+  
+  def fromMap[S, K, V](m: Map[K, V]): ST[S, STMap[S, K, V]] = 
+    ST(new STMap[S, K, V](mutable.HashMap.from(m)))

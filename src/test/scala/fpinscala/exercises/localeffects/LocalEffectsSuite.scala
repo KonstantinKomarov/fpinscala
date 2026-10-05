@@ -36,6 +36,25 @@ class STArraySuite extends FunSuite:
     assert(xs.drop(p + 1).forall(_ >= 4), s"right side: ${xs.drop(p + 1)}")
   }
 
+  test("histogram") {
+    val words = List("a", "b", "a", "c", "b", "a")
+    val prog: RunnableST[Map[String, Int]] = 
+      new RunnableST[Map[String, Int]]:
+        def apply[S] = for
+          m <- STMap.empty[S, String, Int]
+          _ <- words.foldLeft(ST[S, Unit](())) { (acc, w) =>
+            acc.flatMap( _ =>
+              m.read(w).flatMap {
+                case Some(n) => m.write(w, n + 1)
+                case None    => m.write(w, 1)
+              }
+            )
+          }
+          x <- m.freeze
+        yield x
+    assertEquals(run(prog), Map("a" -> 3, "b" -> 2, "c" -> 1))
+  }
+
 class LocalEffectsSuite extends FunSuite:
   test("1") {
     assertEquals(1, 2)
