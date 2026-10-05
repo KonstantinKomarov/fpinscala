@@ -84,7 +84,9 @@ final class STArray[S, A] private (private var value: Array[A]):
 
   // Exercise 14.1
   def fill(xs: Map[Int, A]): ST[S, Unit] =
-    ???
+    xs.foldRight(ST[S, Unit](())) {
+      case ((i, a), acc) => acc.flatMap(_ => write(i, a))
+    }
 
   def swap(i: Int, j: Int): ST[S, Unit] =
     for

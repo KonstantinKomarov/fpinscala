@@ -1,6 +1,37 @@
 package fpinscala.exercises
 package tst
 
+import fpinscala.exercises.localeffects.* 
+
+trait RunnableST[A] {
+	def apply[S]: ST[S, A]
+}
+
+object Tst:
+	val p = new RunnableST[(Int, Int)] {
+		def apply[S] = for {
+			r1 <- STRef(1)
+			r2 <- STRef(2)
+			x  <- r1.read
+			y  <- r2.read
+			_  <- r1.write(y + 1)
+			_  <- r2.write(x + 1)
+			a  <- r1.read
+			b  <- r2.read 
+		} yield (a, b)
+	}
+
+	// val pRef = new RunnableST[STRef[_, Int]] {
+	// 	def apply[S] = for {
+	// 		r1 <- STRef(1)
+	// 	} yield r1
+	// }
+
+object tstST:
+	def apply[S, A](a: => A): ST[S, A] = ST.apply(a)
+	def runST[A](st: RunnableST[A]): A = ST.run[A]([s] => () => st.apply[s])
+
+/*
 sealed trait IO[A] {
 	def flatMap[B](f: A => IO[B]): IO[B] =
 		FlatMap(this, f)
@@ -49,3 +80,5 @@ def zipWithIndex[A](as: List[A])(iv: Int = 0)
 extension [S](m: Monad[[X] =>> State[S, X]])
     def getState: State[S, S] = State(s => (s, s))
     def setState(v: S): State[S, Unit] = State(_ => ((), v))
+
+*/
