@@ -3,6 +3,35 @@ package tst
 
 import fpinscala.exercises.localeffects.* 
 
+sealed trait Proc[I, O]
+case class Emit[I, O] (
+	head: O,
+	tail: Proc[I, O] = Halt[I, O]()
+) extends Proc[I, O]
+case class Await[I, O] (
+	recv: Option[I] => Proc[I, O]
+) extends Proc[I, O]
+case class Halt[I, O]() extends Proc[I, O]
+
+extension [I, O](p: Proc[I, O])
+	def apply(src: LazyList[I]): LazyList[O] = p match
+		case Halt()			=> LazyList.empty
+		case Await(recv) => src match {
+			case h #:: t 	=> recv(Some(h))(t)
+			case _				=> recv(None)(LazyList.empty)
+		}
+		case Emit(h, t)	=> h #:: t(src)
+	
+def liftOne[I, O](f: I => O): Proc[I, O] = 
+	Await {
+		case Some(i) => Emit(f(i))
+		case None => Halt()
+	}
+
+val p = liftOne((x: Int) => x * 2)
+
+
+
 trait RunnableST[A] {
 	def apply[S]: ST[S, A]
 }
