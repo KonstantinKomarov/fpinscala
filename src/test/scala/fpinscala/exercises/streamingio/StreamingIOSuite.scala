@@ -1,4 +1,4 @@
-package fpinscala.exercise.streamingio
+package fpinscala.exercises.streamingio
 
 import munit.FunSuite
 
