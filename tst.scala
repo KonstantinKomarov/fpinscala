@@ -30,6 +30,38 @@ def liftOne[I, O](f: I => O): Proc[I, O] =
 
 val p = liftOne((x: Int) => x * 2)
 
+extension [I, O](proc: Proc[I, O]) 
+	def repeat: Proc[I, O] = {
+		def go(p: Proc[I, O]): Proc[I, O] = p match {
+			case Halt() => go(proc)
+			case Await(recv) => Await {
+				case None => recv(None)
+				case i 		=> go(recv(i))
+			}
+			case Emit(h, t) => Emit(h, go(t))
+		}
+		go(proc)
+}
+
+def lift[I, O](f: I => O): Proc[I, O] = liftOne(f).repeat
+
+def filter[I](p: I => Boolean): Proc[I, I] =
+	Await[I, I] {
+		case Some(i) if p(i) => Emit(i)
+		case _ => Halt()
+	}.repeat
+
+val units = LazyList.continually(())
+val ones = lift((_: Unit) => 1)(units)
+
+// def sum: Proc[Double, Double] = {
+// 	def go(acc: Double): Proc[Double, Double] = 
+// 		Await {
+// 			case Some(d) => Emit(d + acc, go(d + acc))
+// 			case None => Halt()
+// 		}
+// 	go(0.0)
+// }
 
 
 trait RunnableST[A] {
