@@ -74,3 +74,21 @@ def dropWhile[I](f: I => Boolean): Proc[I, I] =
 		case Some(i)					=> emit(i, id)
 		case None 						=> Halt()
 	}
+
+
+def count[I]: Proc[I, Int] = 
+	def go(n: Int): Proc[I, Int] = 
+		await {
+			case Some(_) => emit(n + 1, go(n + 1))
+			case None 	 => Halt() 
+		}
+	go(0)
+def count0[I]: Proc[I, Int] = 
+	def go(n: Int): Proc[I, Int] = 
+		emit(n, 
+			await {
+				case Some(_)	=> go(n + 1)
+				case None			=> Halt()
+			}
+		)
+	go(0)
