@@ -52,15 +52,26 @@ object SimplePulls:
 
     // Exercise 15.3
     def drop(n: Int): Pull[O, R] =
-      ???
+      if n <= 0 then this
+      else uncons.flatMap:
+        case Left(r)        => Result(r)
+        case Right((_, tl)) => tl.drop(n - 1)
 
     // Exercise 15.3
     def takeWhile(f: O => Boolean): Pull[O, Pull[O, R]] =
-      ???
+      uncons.flatMap:
+        case Left(r) => Result(Result(r))
+        case Right((hd, tl)) =>
+          if f(hd) then Output(hd) >> tl.takeWhile(f)
+          else Result(Output(hd) >> tl)
     
     // Exercise 15.3
     def dropWhile(f: O => Boolean): Pull[Nothing, Pull[O, R]] =
-      ???
+      uncons.flatMap:
+        case Left(r) => Result(Result(r))
+        case Right((hd, tl)) =>
+          if f(hd) then tl.dropWhile(f)
+          else Result(Output(hd) >> tl)
 
     def mapOutput[O2](f: O => O2): Pull[O2, R] =
       uncons.flatMap:
@@ -84,7 +95,13 @@ object SimplePulls:
 
     // Exercise 15.4
     def tally[O2 >: O](using m: Monoid[O2]): Pull[O2, R] =
-      ???
+      def go(acc: O2, p: Pull[O, R]): Pull[O2, R] = 
+        p.uncons.flatMap:
+          case Left(r) => Result(r)
+          case Right((hd, tl)) =>
+            val newAcc = m.combine(acc, hd)
+            Output(newAcc) >> go(newAcc, tl)
+      go(m.empty, this)
 
     def mapAccumulate[S, O2](init: S)(f: (S, O) => (S, O2)): Pull[O2, (S, R)] =
       uncons.flatMap:
