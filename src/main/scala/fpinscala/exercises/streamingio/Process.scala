@@ -64,9 +64,8 @@ def drop[I](n: Int): Proc[I, I] =
 	}
 def takeWhile[I](f: I => Boolean): Proc[I, I] = 
 	await {
-		case Some(i) if f(i)	=> takeWhile(f)
-		case Some(i)					=> emit(i, id)
-		case None							=> Halt()
+		case Some(i) if f(i)	=> emit(i, takeWhile(f))
+		case _								=> Halt()
 	}
 def dropWhile[I](f: I => Boolean): Proc[I, I] =
 	await {
