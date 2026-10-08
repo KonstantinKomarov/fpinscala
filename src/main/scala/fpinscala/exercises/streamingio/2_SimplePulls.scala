@@ -112,11 +112,14 @@ object SimplePulls:
 
     // Exercise 15.6
     def countViaMapAccumulate: Pull[Int, R] =
-      ???
+      mapAccumulate(0)((n, _) => (n + 1, n + 1)).map(_._2)
 
     // Exercise 15.6
     def tallyViaMapAccumulate[O2 >: O](using m: Monoid[O2]): Pull[O2, R] =
-      ???
+      mapAccumulate(m.empty)((acc, o) => {
+        val newAcc = m.combine(acc, o)
+        (newAcc, newAcc)
+      }).map(_._2)
 
   object Pull:
     val done: Pull[Nothing, Unit] = Result(())

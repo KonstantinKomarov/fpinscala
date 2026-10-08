@@ -42,12 +42,23 @@ class SimplePullsSuite extends FunSuite:
 		assertEquals(rest.toList, List(1, 3, 5, 8))
 	}
 
-	val listConcat: Monoid[List[Int]] = new Monoid[List[Int]]:
-		def combine(a: List[Int], b: List[Int]): List[Int] = a ++ b
-		def empty: List[Int] = Nil
+	import fpinscala.answers.monoids.Monoid.*
 
-	test("tally with monoid on list collects lists") {
+	// val listConcat: Monoid[List[Int]] = new Monoid[List[Int]]:
+	// 	def combine(a: List[Int], b: List[Int]): List[Int] = a ++ b
+	// 	def empty: List[Int] = Nil
+
+	test("tally: with monoid on list collects lists") {
 		val p = fromList(List(1, 2, 3))
-		val t = p.mapOutput(x => List(x)).tally[List[Int]](using listConcat)
+		val t = p.mapOutput(x => List(x)).tally[List[Int]](using listMonoid)
 		assertEquals(t.toList, List(List(1), List(1, 2), List(1, 2, 3)))
+	}
+
+	test("tallyViaMapAccumulate: equals tally") {
+		val l = List("x", "y", "z")
+		val xs = fromList(l)
+		val a = xs.tally[String](using stringMonoid).toList
+		val b = xs.tallyViaMapAccumulate[String](using stringMonoid).toList
+		assertEquals(a, b)
+		assertEquals(b, l.scanLeft("")(_ ++ _).tail)
 	}
