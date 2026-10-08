@@ -42,3 +42,24 @@ class ProcessSuite extends FunSuite:
 			take[Int](amount)(count0[Int](c2)).toList
 		)
 	}
+
+	private def meanScanLeft(ll: LazyList[Double]): LazyList[Double] =
+			ll.scanLeft((0.0, 0)) { (acc ,i) =>
+				val (sum, n) = acc
+				(sum + i, n + 1)
+			}.tail.map { case (sum, n) => sum / n }
+
+	test("mean") {
+		val ll = LazyList.from(1).take(4).map((i: Int) => (i: Double))
+		val expected = meanScanLeft(ll) 
+		assertEquals(mean(ll), expected)
+	}
+
+	test("mean: over filter"){
+		val evens = filter((x: Double) => x % 2 == 0)
+		val ll 		= LazyList.from(1).take(6).map((i: Int) => (i: Double))
+		val expected = meanScanLeft(
+			ll.filter(x => x % 2 == 0)
+		)
+		assertEquals(mean(evens(ll)), expected)
+	}

@@ -91,3 +91,13 @@ def count0[I]: Proc[I, Int] =
 			}
 		)
 	go(0)
+
+def mean: Proc[Double, Double] = 
+	def go(sum: Double, n: Int): Proc[Double, Double] = 
+		await {
+			case Some(d) =>
+				val (newSum, newN) = (sum + d, n + 1)
+				emit(newSum / newN, go(newSum, newN))
+			case None => Halt()
+		}
+	go(0.0, 0)
