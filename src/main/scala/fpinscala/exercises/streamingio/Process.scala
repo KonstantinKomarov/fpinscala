@@ -101,3 +101,22 @@ def mean: Proc[Double, Double] =
 			case None => Halt()
 		}
 	go(0.0, 0)
+
+def loop[S, I, O](z: S)(f: (I, S) => (O, S)): Proc[I, O] = 
+	await {
+		case Some(i) =>
+			val (o, s2) = f(i, z)
+			emit(o, loop(s2)(f))
+		case None => Halt()
+	}
+def sum: Proc[Double, Double] =
+	loop(0.0)((d, acc) => (acc + d, acc + d))
+def countViaLoop[I]: Proc[I, Int] = 
+	loop(0)((_, n) => (n + 1, n + 1))
+def meanViaLoop: Proc[Double, Double] =
+	loop((0.0, 0.0)) { (d, acc) =>
+		val (s, n) = acc
+		val sNew = s + 1
+		val nNew = n + 1
+		(sNew / nNew, (sNew, nNew))
+	}

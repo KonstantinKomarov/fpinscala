@@ -63,3 +63,31 @@ class ProcessSuite extends FunSuite:
 		)
 		assertEquals(mean(evens(ll)), expected)
 	}
+
+	test("sum") {
+		val ones = LazyList.continually(1.0)
+		val cnt = 5
+
+		val expctd = ones.take(cnt).scanLeft(0.0)(_ + _).tail 
+		assertEquals(sum(ones).take(cnt),	expctd)
+	}
+
+	test("count: on lazy infinite") {
+		val cnt = 3
+		val strt = 100
+		val ll = LazyList.from(strt).take(cnt)
+		val expctd = LazyList.from(1).take(cnt) 
+		assertEquals(countViaLoop[Int](ll), expctd)
+	}
+
+	test("mean: mixed signs"){
+		val ll_inf = LazyList.from(1).map { (i: Int) =>
+			val d: Double = i
+			if i % 2 == 0 then d * 2 else (-1) * d * 2 
+		}
+		val cnt = 4
+		val ll = ll_inf.take(cnt)
+		val expctd = meanScanLeft(ll)
+		assertEquals(mean(ll), expctd)
+	}
+
